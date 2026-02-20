@@ -2,7 +2,7 @@ import { Database } from "Configuration/database.js";
 import { Categories } from "model/category.model.js";
 
 export class CategoryRepository {
-  private pool = Database.getIntance();
+  private pool = Database.getInstance();
 
   async create(category: Categories) {
     const { name, description } = category;

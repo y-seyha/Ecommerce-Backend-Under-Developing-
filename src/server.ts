@@ -6,7 +6,7 @@ import app from "./app.js";
 const logger = Logger.getInstance();
 
 //Database Connection
-Database.getIntance();
+Database.getInstance();
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

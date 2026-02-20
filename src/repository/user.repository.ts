@@ -6,7 +6,7 @@ export class UserRepository {
   private db: Pool;
 
   constructor() {
-    this.db = Database.getIntance();
+    this.db = Database.getInstance();
   }
 
   async create(user: Omit<User, "id">): Promise<User> {

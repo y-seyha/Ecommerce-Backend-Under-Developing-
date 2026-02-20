@@ -6,7 +6,7 @@ import { Database } from "Configuration/database.js";
 export class ProductService {
   private repo = new ProductRepository();
   private logger = Logger.getInstance();
-  private pool = Database.getIntance();
+  private pool = Database.getInstance();
 
   async createProduct(dto: CreateProductDto) {
     try {

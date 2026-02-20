@@ -4,7 +4,7 @@ import { Logger } from "utils/logger.js";
 
 export class ProductRepository {
   private logger = Logger.getInstance();
-  private pool = Database.getIntance();
+  private pool = Database.getInstance();
 
   async create(product: Product): Promise<Product> {
     const query = `

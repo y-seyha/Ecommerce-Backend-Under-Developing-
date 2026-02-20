@@ -6,7 +6,7 @@ export class Database {
 
   private constructor() {}
 
-  public static getIntance(): Pool {
+  public static getInstance(): Pool {
     {
       if (!Database.instance) {
         Database.instance = new Pool({
