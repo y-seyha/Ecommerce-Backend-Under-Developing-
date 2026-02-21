@@ -1,0 +1,10 @@
+node_modules
+logs
+dist
+*.log
+.git
+.gitignore
+.env.local
+.env
+.env.pgadmin
+.env.*
