@@ -4,7 +4,6 @@ export interface Cart {
   created_at?: string;
 }
 
-//DTO
 export interface CreateCartDto {
   user_id: number;
 }

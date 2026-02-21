@@ -4,6 +4,8 @@ import productRoute from "./routes/product.route.js";
 import categoryRoutes from "./routes/category.route.js";
 import cartRoutes from "./routes/cart.route.js";
 import cartItemRoutes from "./routes/cartItem.route.js";
+import ordersRoute from "./routes/orders.route.js";
+import orderItemRoutes from "./routes/orderItem.route.js";
 import { errorHandler } from "middleware/error.middleware.js";
 
 const app = express();
@@ -14,6 +16,8 @@ app.use("/api/products", productRoute);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/carts", cartRoutes);
 app.use("/api/cart-items", cartItemRoutes);
+app.use("/api/orders", ordersRoute);
+app.use("/api/order-items", orderItemRoutes);
 
 //Middleware
 app.use(errorHandler);

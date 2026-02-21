@@ -1,0 +1,70 @@
+import { CreateOrderDTO, UpdateOrderDTO } from "dto/orders.dto.js";
+import { NextFunction, Request, Response } from "express";
+import { error } from "node:console";
+import { OrderService } from "service/orders.service.js";
+import { Logger } from "utils/logger.js";
+export class OrderController {
+  private service = new OrderService();
+  private logger = Logger.getInstance();
+
+  create = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dto = req.body as CreateOrderDTO;
+      const order = await this.service.createOrder(dto);
+      res.status(201).json(order);
+    } catch (error) {
+      this.logger.error("Order Controller: Create Failed", error);
+      next(error);
+    }
+  };
+
+  update = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = +req.params.id;
+      const dto = req.body as UpdateOrderDTO;
+      const order = await this.service.updateOder(id, dto);
+      res.json(order);
+    } catch (error) {
+      this.logger.error("Order Controller: Update Failed", error);
+      next(error);
+    }
+  };
+
+  delete = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = +req.params.id;
+      const success = await this.service.deleteOrder(id);
+      if (success) {
+        res.json({ message: "Deleted Successfully" });
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
+    } catch (error) {
+      this.logger.error("Order Controller: Update Failed", error);
+      next(error);
+    }
+  };
+
+  findAll = async (_: Request, res: Response, next: NextFunction) => {
+    try {
+      const orders = await this.service.getAllOrders();
+      res.json(orders);
+    } catch (error) {
+      this.logger.error("Order Controller: FindAll Failed", error);
+      next(error);
+    }
+  };
+
+  findById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = +req.params.id;
+      const order = await this.service.getOrderById(id);
+      order
+        ? res.json(order)
+        : res.status(404).json({ message: "Order not found" });
+    } catch (error) {
+      this.logger.error("Order Controller: FindById Failed", error);
+      next(error);
+    }
+  };
+}
