@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { Database } from "Configuration/database.js";
-import { User } from "model/user.model.js";
+import { IUser } from "model/user.model.js";
 
 export class UserRepository {
   private db: Pool;
@@ -9,7 +9,7 @@ export class UserRepository {
     this.db = Database.getInstance();
   }
 
-  async create(user: Omit<User, "id">): Promise<User> {
+  async create(user: Omit<IUser, "id">): Promise<IUser> {
     const result = await this.db.query(
       `INSERT INTO users(first_name,last_name,email,password,role)
        VALUES($1,$2,$3,$4,$5) RETURNING *`,
@@ -19,12 +19,12 @@ export class UserRepository {
     return result.rows[0];
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll(): Promise<IUser[]> {
     const res = await this.db.query(`SELECT * FROM users`);
     return res.rows;
   }
 
-  async findById(id: number): Promise<User> {
+  async findById(id: number): Promise<IUser> {
     const res = await this.db.query(
       `SELECT * FROM users
         WHERE id=$1`,
@@ -33,7 +33,7 @@ export class UserRepository {
     return res.rows[0];
   }
 
-  async findByEmail(email: string): Promise<User> {
+  async findByEmail(email: string): Promise<IUser> {
     const res = await this.db.query(
       `SELECT * FROM users
         WHERE email=$1`,
@@ -42,7 +42,7 @@ export class UserRepository {
     return res.rows[0];
   }
 
-  async update(id: number, user: User): Promise<User> {
+  async update(id: number, user: IUser): Promise<IUser> {
     const result = await this.db.query(
       `UPDATE users
        SET first_name=$1,last_name=$2,email=$3,password=$4,role=$5,updated_at=NOW()

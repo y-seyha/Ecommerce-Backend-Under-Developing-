@@ -1,11 +1,12 @@
-// Short hand
-export class User {
-  constructor(
-    public id: number | null,
-    public first_name: string,
-    public last_name: string,
-    public email: string,
-    public password: string,
-    public role: string = "customer",
-  ) {}
+export type UserRole = "customer" | "admin" | "seller";
+
+export interface IUser {
+  id: number | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  role?: UserRole;
+  created_at?: Date;
+  updated_at?: Date;
 }

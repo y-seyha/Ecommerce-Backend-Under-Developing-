@@ -24,18 +24,31 @@ export class UserController {
   }
 
   async getAll(req: Request, res: Response) {
-    const users = await this.userService.getUsers();
-    res.json(users);
+    try {
+      const users = await this.userService.getUsers();
+      res.json(users);
+    } catch (error: any) {
+      res.status(401).json({ message: error.message });
+    }
   }
 
   async getById(req: Request, res: Response) {
-    const user = await this.userService.getUserById(+req.params.id);
-    res.json(user);
+    try {
+      const user = await this.userService.getUserById(+req.params.id);
+      res.json(user);
+    } catch (error: any) {
+      res.status(401).json({ message: error.message });
+    }
   }
 
   async update(req: Request, res: Response) {
-    const user = await this.userService.updateUser(+req.params.id, req.body);
+
+        try {
+       const user = await this.userService.updateUser(+req.params.id, req.body);
     res.json(user);
+    } catch (error: any) {
+      res.status(401).json({ message: error.message });
+    }
   }
 
   async delete(req: Request, res: Response) {

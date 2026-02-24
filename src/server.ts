@@ -1,4 +1,5 @@
-import "dotenv/config";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 import { Database } from "Configuration/database.js";
 import { Logger } from "./utils/logger.js";
 import app from "./app.js";

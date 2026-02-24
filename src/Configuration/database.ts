@@ -1,5 +1,6 @@
 import { Pool } from "pg";
-import "dotenv/config";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 
 export class Database {
   private static instance: Pool;

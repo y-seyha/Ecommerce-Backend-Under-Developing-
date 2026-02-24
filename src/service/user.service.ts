@@ -3,7 +3,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Logger } from "../utils/logger.js";
 import { CreateUserDTO, LoginUserDTO, UpdateUserDTO } from "dto/user.dto.js";
-import { User } from "model/user.model.js";
+import { IUser } from "model/user.model.js";
+import { mapUpdateUserDTOToIUser } from "utils/userMapper.js";
 
 const logger = Logger.getInstance();
 
@@ -21,7 +22,7 @@ export class UserService {
     const newUser = await this.userRepo.create({
       ...userData,
       password: hashedPassword,
-      role: "customer",
+      role: userData.role || "customer",
     });
 
     logger.info(`New user registered successfully: ${newUser.email}`);
@@ -55,27 +56,24 @@ export class UserService {
     return { user: safeUser, token };
   }
 
-  async updateUser(id: number, data: UpdateUserDTO & { password?: string }) {
+  async updateUser(id: number, dto: UpdateUserDTO) {
     const existingUser = await this.userRepo.findById(id);
     if (!existingUser) {
       logger.warn(`Update failed: User not found - ${id}`);
       throw new Error("User not found");
     }
 
-    // If password updated, hash it
-    if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+    // Hash password if provided
+    if (dto.password) {
+      dto.password = await bcrypt.hash(dto.password, 10);
     }
 
-    const userToUpdate = new User(
-      existingUser.id, // id must be provided
-      data.first_name || existingUser.first_name,
-      data.last_name || existingUser.last_name,
-      existingUser.email,
-      data.password || existingUser.password,
-      existingUser.role,
-    );
+    // Map DTO to full IUser
+    const userToUpdate = mapUpdateUserDTOToIUser(existingUser, dto);
+
     const updatedUser = await this.userRepo.update(id, userToUpdate);
+
+    // Remove password before returning
     const { password, ...safeUser } = updatedUser;
     return safeUser;
   }
