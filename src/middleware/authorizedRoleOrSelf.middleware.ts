@@ -4,6 +4,7 @@ import { Logger } from "utils/logger.js";
 
 const logger = Logger.getInstance();
 
+//allowedRoles allow to passed roles
 export const authorizeRoleOrSelf = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -12,7 +13,7 @@ export const authorizeRoleOrSelf = (...allowedRoles: UserRole[]) => {
         return res.status(401).json({ message: "Unauthorized: No user info" });
       }
 
-      // the user being updated
+      // the user being updated // + is unary plus === convert string to number
       const targetUserId = +req.params.id;
 
       // Admin can update anyone

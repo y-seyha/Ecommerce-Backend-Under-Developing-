@@ -1,29 +1,21 @@
-import { z } from "zod";
+import { z, ZodObject, ZodRawShape } from "zod";
 
 export class UserValidator {
-  static createUserSchema = z.object({
+   static createUserSchema: ZodObject<ZodRawShape> = z.object({
     body: z.object({
-      first_name: z
-        .string()
-        .trim()
-        .min(2, "First name must be at least 2 characters")
-        .max(50),
-
-      last_name: z
-        .string()
-        .trim()
-        .min(2, "Last name must be at least 2 characters")
-        .max(50),
-
-      email: z.string().trim().email("Invalid email format").toLowerCase(),
-
+      first_name: z.string().trim().min(2).max(50),
+      last_name: z.string().trim().min(2).max(50),
+      email: z.string().trim().email().toLowerCase(),
       password: z
         .string()
-        .min(8, "Password must be at least 8 characters")
-        .regex(/[A-Z]/, "Must contain 1 uppercase letter")
-        .regex(/[a-z]/, "Must contain 1 lowercase letter")
-        .regex(/[0-9]/, "Must contain 1 number"),
+        .min(8)
+        .regex(/[A-Z]/)
+        .regex(/[a-z]/)
+        .regex(/[0-9]/),
+      role: z.enum(["customer", "admin", "seller"]).optional(),
     }),
+    params: z.object({}),
+    query: z.object({}),
   });
 
   static loginSchema = z.object({
@@ -33,11 +25,10 @@ export class UserValidator {
     }),
   });
 
-  static updateUserSchema = z.object({
+ static updateUserSchema: ZodObject<ZodRawShape> = z.object({
     params: z.object({
-      id: z.coerce.number(), // auto convert "1" → 1
+      id: z.coerce.number(),
     }),
-
     body: z.object({
       first_name: z.string().trim().min(2).max(50).optional(),
       last_name: z.string().trim().min(2).max(50).optional(),
@@ -49,7 +40,9 @@ export class UserValidator {
         .regex(/[a-z]/)
         .regex(/[0-9]/)
         .optional(),
+      role: z.enum(["customer", "admin", "seller"]).optional(),
     }),
+    query: z.object({}),
   });
 
   static getUserByIdSchema = z.object({

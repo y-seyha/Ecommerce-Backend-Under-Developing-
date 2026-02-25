@@ -21,6 +21,7 @@ export const authMiddleware = (
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number; role: UserRole };
 
     // Attach user info to req.user
+    //Only id and role are filled
     req.user = {
       id: decoded.id,
       first_name: "",

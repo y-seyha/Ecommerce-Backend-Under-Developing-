@@ -3,21 +3,36 @@ import { PaymentController } from "../controller/payment.controller.js";
 import { authMiddleware } from "middleware/authMiddleware.js";
 import { authorizeRole } from "middleware/roleMiddleware.js";
 import { authorizePaymentOwnerOrAdmin } from "middleware/authorizePaymentOwnerOrAdmin.middleware.js";
+import { validate } from "middleware/validate.middleware.js";
+import { PaymentValidator } from "valildators/payment.validator.js";
 
 const router = Router();
 const controller = new PaymentController();
 
 // CUSTOMER  create payment
-router.post("/", authMiddleware, authorizeRole("customer"), controller.create);
+router.post(
+  "/",
+  authMiddleware,
+  authorizeRole("customer"),
+  validate(PaymentValidator.createPaymentSchema),
+  controller.create,
+);
 
 // ADMIN  update
-router.put("/:id", authMiddleware, authorizeRole("admin"), controller.update);
+router.put(
+  "/:id",
+  authMiddleware,
+  authorizeRole("admin"),
+  validate(PaymentValidator.updatePaymentSchema),
+  controller.update,
+);
 
 // ADMIN  delete
 router.delete(
   "/:id",
   authMiddleware,
   authorizeRole("admin"),
+  validate(PaymentValidator.getPaymentByIdSchema),
   controller.delete,
 );
 
@@ -28,7 +43,7 @@ router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
 router.get(
   "/:id",
   authMiddleware,
-  authorizePaymentOwnerOrAdmin(),
+  validate(PaymentValidator.getPaymentByIdSchema),
   controller.findById,
 );
 
@@ -36,7 +51,7 @@ router.get(
 router.get(
   "/order/:order_id",
   authMiddleware,
-  authorizePaymentOwnerOrAdmin(),
+  validate(PaymentValidator.getByOrderIdSchema),
   controller.findByOrderId,
 );
 

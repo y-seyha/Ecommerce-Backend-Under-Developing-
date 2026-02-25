@@ -3,6 +3,8 @@ import { OrderItemController } from "../controller/orderItem.controller.js";
 import { authorizeRole } from "middleware/roleMiddleware.js";
 import { authMiddleware } from "middleware/authMiddleware.js";
 import { authorizeOrderOwnerOrAdmin } from "middleware/authorizeOrderOwnerOrAdmin.middleware.js";
+import { validate } from "middleware/validate.middleware.js";
+import { OrderItemValidator } from "valildators/orderItem.validator.js";
 
 const router = Router();
 const controller = new OrderItemController();
@@ -15,6 +17,7 @@ router.get(
   "/:id",
   authMiddleware,
   authorizeOrderOwnerOrAdmin(),
+  validate(OrderItemValidator.getOrderItemByIdSchema),
   controller.findById,
 );
 
@@ -23,6 +26,7 @@ router.get(
   "/order/:order_id",
   authMiddleware,
   authorizeOrderOwnerOrAdmin(),
+  validate(OrderItemValidator.getByOrderIdSchema),
   controller.findByOrderId,
 );
 
@@ -31,6 +35,7 @@ router.put(
   "/:id",
   authMiddleware,
   authorizeRole("admin", "seller"),
+  validate(OrderItemValidator.updateOrderItemSchema),
   controller.update,
 );
 
@@ -39,6 +44,7 @@ router.delete(
   "/:id",
   authMiddleware,
   authorizeRole("admin"),
+  validate(OrderItemValidator.getOrderItemByIdSchema),
   controller.delete,
 );
 

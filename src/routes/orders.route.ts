@@ -3,6 +3,8 @@ import { OrderController } from "controller/order.controller.js";
 import { authMiddleware } from "middleware/authMiddleware.js";
 import { authorizeRole } from "middleware/roleMiddleware.js";
 import { authorizeOrderOwnerOrAdmin } from "middleware/authorizeOrderOwnerOrAdmin.middleware.js";
+import { validate } from "middleware/validate.middleware.js";
+import { OrderValidator } from "valildators/order.validator.js";
 
 const router = Router();
 const controller = new OrderController();
@@ -11,7 +13,7 @@ router.post(
   "/",
   authMiddleware,
   authorizeRole("customer"),
-
+  validate(OrderValidator.createOrderSchema),
   controller.create,
 );
 
@@ -22,7 +24,7 @@ router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
 router.get(
   "/:id",
   authMiddleware,
-  authorizeOrderOwnerOrAdmin(),
+  authorizeOrderOwnerOrAdmin(),  validate(OrderValidator.getOrderByIdSchema),
   controller.findById,
 );
 
@@ -30,7 +32,7 @@ router.get(
 router.put(
   "/:id",
   authMiddleware,
-  authorizeRole("seller", "admin"),
+  authorizeRole("seller", "admin"), validate(OrderValidator.updateOrderSchema),
   controller.update,
 );
 
@@ -38,7 +40,7 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
-  authorizeRole("admin"),
+  authorizeRole("admin"),  validate(OrderValidator.getOrderByIdSchema),
   controller.delete,
 );
 
