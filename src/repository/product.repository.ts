@@ -63,15 +63,58 @@ export class ProductRepository {
     await this.pool.query(`DELETE FROM products WHERE id=$1`, [id]);
   }
 
-  async findAllPaginated(page: number, pageSize: number) {
+  async findAllPaginated(
+    page: number,
+    pageSize: number,
+    filters?: { categoryId?: number; minPrice?: number; maxPrice?: number },
+    sort?: { sortBy?: string; sortOrder?: "ASC" | "DESC" },
+  ) {
     const offset = (page - 1) * pageSize;
+    const values: any[] = [];
+    const filterClauses: string[] = [];
 
-    const { rows: data } = await this.pool.query(
-      `SELECT * FROM products ORDER BY id LIMIT $1 OFFSET $2`,
-      [pageSize, offset],
+    // Filtering
+    if (filters?.categoryId) {
+      values.push(filters.categoryId);
+      filterClauses.push(`category_id = $${values.length}`);
+    }
+    if (filters?.minPrice) {
+      values.push(filters.minPrice);
+      filterClauses.push(`price >= $${values.length}`);
+    }
+    if (filters?.maxPrice) {
+      values.push(filters.maxPrice);
+      filterClauses.push(`price <= $${values.length}`);
+    }
+
+    const whereClause = filterClauses.length
+      ? `WHERE ${filterClauses.join(" AND ")}`
+      : "";
+
+    // Sorting
+    const allowedSortFields = ["id", "price", "name", "created_at"];
+    const sortField =
+      sort?.sortBy && allowedSortFields.includes(sort.sortBy)
+        ? sort.sortBy
+        : "id";
+    const sortOrder = sort?.sortOrder || "ASC";
+
+    // Add LIMIT & OFFSET
+    values.push(pageSize, offset);
+    const query = `
+    SELECT * FROM products
+    ${whereClause}
+    ORDER BY ${sortField} ${sortOrder}
+    LIMIT $${values.length - 1} OFFSET $${values.length}
+  `;
+    const { rows: data } = await this.pool.query(query, values);
+
+    // Count total
+    const countQuery = `SELECT COUNT(*) FROM products ${whereClause}`;
+    const { rows } = await this.pool.query(
+      countQuery,
+      values.slice(0, values.length - 2),
     );
-
-    const { rows } = await this.pool.query(`SELECT COUNT(*) FROM products`);
     const total = parseInt(rows[0].count, 10);
 
     return {

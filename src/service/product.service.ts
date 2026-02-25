@@ -89,12 +89,17 @@ export class ProductService {
     return product;
   }
 
-  async getProductsPaginated(page: number, pageSize: number) {
-  try {
-    return await this.repo.findAllPaginated(page, pageSize);
-  } catch (error) {
-    this.logger.error("Product Service: GetPaginated Failed", error);
-    throw error;
+  async getProductsPaginated(
+    page: number,
+    pageSize: number,
+    filters?: { categoryId?: number; minPrice?: number; maxPrice?: number },
+    sort?: { sortBy?: string; sortOrder?: "ASC" | "DESC" },
+  ) {
+    try {
+      return await this.repo.findAllPaginated(page, pageSize, filters, sort);
+    } catch (error) {
+      this.logger.error("Product Service: GetPaginated Failed", error);
+      throw error;
+    }
   }
-}
 }

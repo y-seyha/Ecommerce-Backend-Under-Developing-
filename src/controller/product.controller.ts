@@ -70,11 +70,28 @@ export class ProductController {
 
   getPaginated = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Parse page & pageSize using Zod
       const { page, pageSize } = paginationSchema.parse({
         query: req.query,
       }).query;
 
-      const result = await this.service.getProductsPaginated(page, pageSize);
+      // Extract optional filtering & sorting parameters from query
+      const { categoryId, minPrice, maxPrice, sortBy, sortOrder } = req.query;
+
+      const result = await this.service.getProductsPaginated(
+        Number(page),
+        Number(pageSize),
+        {
+          categoryId: categoryId ? Number(categoryId) : undefined,
+          minPrice: minPrice ? Number(minPrice) : undefined,
+          maxPrice: maxPrice ? Number(maxPrice) : undefined,
+        },
+        {
+          sortBy: sortBy as string,
+          sortOrder: (sortOrder as "ASC" | "DESC") || "ASC",
+        },
+      );
+
       res.json(result);
     } catch (error) {
       this.logger.error("Product Controller: GetPaginated Failed", error);
