@@ -28,7 +28,9 @@ CREATE TABLE products (
     stock INT DEFAULT 0,
     category_id INT REFERENCES categories(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image_url VARCHAR(500),
+    image_public_id VARCHAR(255)
 );
 
 --  Carts Table

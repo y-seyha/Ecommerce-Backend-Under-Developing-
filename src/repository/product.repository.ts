@@ -6,19 +6,57 @@ export class ProductRepository {
   private logger = Logger.getInstance();
   private pool = Database.getInstance();
 
-  async create(product: Product): Promise<Product> {
+async create(product: Product): Promise<Product> {
+  const query = `
+    INSERT INTO products(
+      name,
+      description,
+      price,
+      stock,
+      category_id,
+      image_url,
+      image_public_id
+    )
+    VALUES($1, $2, $3, $4, $5, $6, $7)
+    RETURNING *;
+  `;
+
+  const values = [
+    product.name,
+    product.description,
+    product.price,
+    product.stock ?? 0,
+    product.category_id,
+    product.image_url ?? null,
+    product.image_public_id ?? null,
+  ];
+
+  const { rows } = await this.pool.query(query, values);
+  return rows[0];
+}
+
+  async update(id: number, product: Product): Promise<Product> {
     const query = `
-    INSERT INTO products(name, description, price, stock, category_id)
-      VALUES($1,$2,$3,$4,$5)
-      RETURNING *;
-    `;
+    UPDATE products 
+    SET name=$1,
+        description=$2,
+        price=$3,
+        stock=$4,
+        category_id=$5,
+        image_url=$6,        -- <-- add image_url
+        updated_at=CURRENT_TIMESTAMP
+    WHERE id=$7
+    RETURNING *
+  `;
 
     const values = [
       product.name,
       product.description,
       product.price,
-      product.stock ?? 0,
+      product.stock,
       product.category_id,
+      product.image_url ?? null, // <-- include image URL
+      id,
     ];
 
     const { rows } = await this.pool.query(query, values);
@@ -35,27 +73,6 @@ export class ProductRepository {
       `SELECT * FROM products WHERE id=$1`,
       [id],
     );
-    return rows[0];
-  }
-
-  async update(id: number, product: Product): Promise<Product> {
-    const query = `
-    UPDATE products 
-    SET name=$1, description=$2, price=$3, stock=$4, category_id=$5, updated_at=CURRENT_TIMESTAMP
-    WHERE id=$6
-    RETURNING *
-    `;
-
-    const values = [
-      product.name,
-      product.description,
-      product.price,
-      product.stock,
-      product.category_id,
-      id,
-    ];
-
-    const { rows } = await this.pool.query(query, values);
     return rows[0];
   }
 

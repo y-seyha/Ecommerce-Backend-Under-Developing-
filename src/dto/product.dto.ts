@@ -4,6 +4,8 @@ export interface CreateProductDto {
   price: number;
   stock?: number;
   category_id?: number;
+  image_url?: string;
+  image_public_id?: string;
 }
 
 export interface UpdateProductDto {
@@ -12,4 +14,6 @@ export interface UpdateProductDto {
   price?: number;
   stock?: number;
   category_id?: number;
+  image_url?: string;
+  image_public_id?: string;
 }
