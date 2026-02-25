@@ -1,4 +1,5 @@
 import express from "express";
+
 import userRoute from "./routes/user.route.js";
 import productRoute from "./routes/product.route.js";
 import categoryRoutes from "./routes/category.route.js";
@@ -9,11 +10,23 @@ import orderItemRoutes from "./routes/orderItem.route.js";
 import paymentRoutes from "./routes/payment.route.js";
 import reviewRoutes from "./routes/review.route.js";
 
-import { errorHandler } from "middleware/error.middleware.js";
-import cors from "cors";
-import helmet from "helmet";
+import {
+  corsMiddleware,
+  errorHandler,
+  globalRateLimiter,
+  helmetMiddleware,
+} from "middleware/global.middleware.js";
 
 const app = express();
+
+app.use(corsMiddleware);
+app.use(helmetMiddleware);
+
+// 2. Trust proxy
+app.set("trust proxy", 1);
+
+app.use(globalRateLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -38,33 +51,6 @@ app.use("/api/v1/order-items", orderItemRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/reviews", reviewRoutes);
 
-//cors setup
-app.use(
-  cors({
-    origin: ["https://my-frontend.com", "https://another-site.com"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // allow cookies/auth headers
-    maxAge: 600, // cache preflight requests for 10 minutes
-  }),
-);
-
-//helmet setup
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "https://trusted-scripts.com"],
-        imgSrc: ["'self'", "data:"],
-      },
-    },
-    frameguard: { action: "deny" }, // prevent clickjacking
-    hidePoweredBy: true, // hides Express
-  }),
-);
-
-//Middleware
 app.use(errorHandler);
 
 export default app;
