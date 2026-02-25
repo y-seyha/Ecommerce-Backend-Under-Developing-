@@ -81,4 +81,17 @@ export class PaymentRepository {
     );
     return result.rows;
   }
+
+  async findAllPaginated(page: number, pageSize: number) {
+    const offset = (page - 1) * pageSize;
+    const totalRes = await this.pool.query(`SELECT COUNT(*) FROM payments`);
+    const total = parseInt(totalRes.rows[0].count, 10);
+
+    const dataRes = await this.pool.query(
+      `SELECT * FROM payments ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [pageSize, offset],
+    );
+
+    return { data: dataRes.rows, total, page, pageSize };
+  }
 }

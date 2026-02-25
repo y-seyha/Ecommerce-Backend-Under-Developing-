@@ -68,4 +68,18 @@ export class OrderRepository {
     );
     return result.rows;
   }
+  async findAllPaginated(page: number, pageSize: number) {
+    const offset = (page - 1) * pageSize;
+    const totalRes = await this.pool.query(`SELECT COUNT(*) FROM orders`);
+    const total = parseInt(totalRes.rows[0].count, 10);
+
+    const dataRes = await this.pool.query(
+      `SELECT * FROM orders 
+      ORDER BY created_at DESC 
+      LIMIT $1 OFFSET $2`,
+      [pageSize, offset],
+    );
+
+    return { data: dataRes.rows, total, page, pageSize };
+  }
 }

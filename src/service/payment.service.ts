@@ -64,4 +64,14 @@ export class PaymentService {
   async getPaymentsByOrderId(order_id: number) {
     return this.repo.findByOrderId(order_id);
   }
+
+
+async getPaymentPaginated(page: number, pageSize: number) {
+  try {
+    return await this.repo.findAllPaginated(page, pageSize);
+  } catch (error) {
+    this.logger.error("Payment Service: GetPaginated Failed", error);
+    throw error;
+  }
+}
 }

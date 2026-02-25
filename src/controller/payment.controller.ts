@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { PaymentService } from "../service/payment.service.js";
 import { CreatePaymentDTO, UpdatePaymentDTO } from "../dto/payment.dto.js";
 import { Logger } from "utils/logger.js";
+import { paginationSchema } from "valildators/pagination.validator.js";
 
 export class PaymentController {
   private service = new PaymentService();
@@ -71,6 +72,20 @@ export class PaymentController {
       res.json(payments);
     } catch (error) {
       this.logger.error("Payment Controller: FindByOrderId Failed", error);
+      next(error);
+    }
+  };
+
+  getPaginated = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { page, pageSize } = paginationSchema.parse({
+        query: req.query,
+      }).query;
+
+      const result = await this.service.getPaymentPaginated(page, pageSize);
+      res.json(result);
+    } catch (error) {
+      this.logger.error("Payment Controller: GetPaginated Failed", error);
       next(error);
     }
   };

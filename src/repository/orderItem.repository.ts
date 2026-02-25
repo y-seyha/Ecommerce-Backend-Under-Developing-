@@ -69,4 +69,17 @@ export class OrderItemRepository {
     const rowCount = result.rowCount ?? 0;
     return rowCount > 0;
   }
+
+  async findAllPaginated(page: number, pageSize: number) {
+  const offset = (page - 1) * pageSize;
+  const totalRes = await this.db.query(`SELECT COUNT(*) FROM cart_items`);
+  const total = parseInt(totalRes.rows[0].count, 10);
+
+  const dataRes = await this.db.query(
+    `SELECT * FROM cart_items ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+    [pageSize, offset]
+  );
+
+  return { data: dataRes.rows, total, page, pageSize };
+}
 }

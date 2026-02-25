@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { CartItemService } from "service/cartItem.service.js";
 import { CreateCartItemDto, UpdateCartItemDto } from "../dto/cartItem.dto.js";
 import { Logger } from "utils/logger.js";
+import { paginationSchema } from "valildators/pagination.validator.js";
 
 export class CartItemController {
   private service = new CartItemService();
@@ -58,6 +59,20 @@ export class CartItemController {
       res.json({ message: "Deleted successfully" });
     } catch (error) {
       this.logger.error("CartItem Controller: Delete Failed", error);
+      next(error);
+    }
+  };
+
+  getPaginated = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { page, pageSize } = paginationSchema.parse({
+        query: req.query,
+      }).query;
+
+      const result = await this.service.getCartItemPaginated(page, pageSize);
+      res.json(result);
+    } catch (error) {
+      this.logger.error("Cart Item Controller: GetPaginated Failed", error);
       next(error);
     }
   };

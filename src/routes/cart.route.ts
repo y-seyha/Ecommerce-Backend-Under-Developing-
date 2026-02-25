@@ -10,7 +10,13 @@ const router = Router();
 const controller = new CartController();
 
 router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
-
+router.get(
+  "/paginated",
+  authMiddleware,
+  authorizeRole("admin"),
+  validate(CartValidator.getPaginatedSchema),
+  controller.getPaginated.bind(controller),
+);
 router.get(
   "/:id",
   authMiddleware,

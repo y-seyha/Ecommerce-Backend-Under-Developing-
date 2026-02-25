@@ -63,4 +63,29 @@ export class UserRepository {
   async delete(id: number) {
     await this.db.query(`DELETE FROM users WHERE id=$1`, [id]);
   }
+
+  async findAllPaginated(page: number = 1, pageSize: number = 5) {
+    const offset = (page - 1) * pageSize;
+
+    const totalResult = await this.db.query(`SELECT COUNT(*) FROM users`);
+    const total = Number(totalResult.rows[0]);
+
+    const result = await this.db.query(
+      `SELECT id, first_name, last_name, email, role, created_at, updated_at
+      FROM users
+      ORDER BY created_at DESC
+      LIMIT $1 OFFSET $2`,
+      [pageSize, offset],
+    );
+
+    return {
+      data: result.rows,
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
+  }
 }

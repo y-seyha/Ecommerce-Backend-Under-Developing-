@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ProductService } from "service/product.service.js";
 import { CreateProductDto, UpdateProductDto } from "dto/product.dto.js";
 import { Logger } from "utils/logger.js";
+import { paginationSchema } from "valildators/pagination.validator.js";
 
 export class ProductController {
   private service = new ProductService();
@@ -63,6 +64,20 @@ export class ProductController {
       res.json(product);
     } catch (error) {
       this.logger.error("Product Controller: FindById Failed", error);
+      next(error);
+    }
+  };
+
+  getPaginated = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { page, pageSize } = paginationSchema.parse({
+        query: req.query,
+      }).query;
+
+      const result = await this.service.getProductsPaginated(page, pageSize);
+      res.json(result);
+    } catch (error) {
+      this.logger.error("Product Controller: GetPaginated Failed", error);
       next(error);
     }
   };

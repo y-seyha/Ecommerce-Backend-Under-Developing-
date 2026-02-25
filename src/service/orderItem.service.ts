@@ -74,4 +74,13 @@ export class OrderItemService {
   async getItemsByOrderId(order_id: number) {
     return await this.repo.findByOrderId(order_id);
   }
+
+  async getOrderItemPaginated(page: number, pageSize: number) {
+    try {
+      return await this.repo.findAllPaginated(page, pageSize);
+    } catch (error) {
+      this.logger.error("Order Item Service: GetPaginated Failed", error);
+      throw error;
+    }
+  }
 }

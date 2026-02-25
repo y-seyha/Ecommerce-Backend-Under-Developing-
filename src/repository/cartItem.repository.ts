@@ -49,4 +49,26 @@ export class CartItemRepository {
       [id],
     );
   }
+
+  async findAllPaginated(page: number, pageSize: number) {
+  const offset = (page - 1) * pageSize;
+
+  const { rows: data } = await this.pool.query(
+    `SELECT * FROM cart_items ORDER BY id LIMIT $1 OFFSET $2`,
+    [pageSize, offset],
+  );
+
+  const { rows } = await this.pool.query(`SELECT COUNT(*) FROM cart_items`);
+  const total = parseInt(rows[0].count, 10);
+
+  return {
+    data,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
+  
 }

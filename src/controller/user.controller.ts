@@ -1,58 +1,116 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { UserService } from "service/user.service.js";
+import { z } from "zod";
+import { UserValidator } from "valildators/user.validator.js";
+import { CreateUserDTO, UpdateUserDTO } from "dto/user.dto.js";
+import { Logger } from "utils/logger.js";
+import { paginationSchema } from "valildators/pagination.validator.js";
 
 export class UserController {
   private userService = new UserService();
+  private logger = Logger.getInstance();
 
-  async register(req: Request, res: Response) {
+  // Register
+  async register(
+    req: Request<
+      {},
+      {},
+      z.infer<typeof UserValidator.createUserSchema>["body"]
+    >,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const user = await this.userService.register(req.body);
-      res.json(user);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      const user = await this.userService.register(req.body as CreateUserDTO);
+      res.status(201).json({ success: true, data: user });
+    } catch (error) {
+      next(error); // passes to global error handler
     }
   }
 
-  async login(req: Request, res: Response) {
+  // Login
+  async login(
+    req: Request<{}, {}, z.infer<typeof UserValidator.loginSchema>["body"]>,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const { email, password } = req.body;
       const data = await this.userService.login({ email, password });
-      res.json(data);
-    } catch (error: any) {
-      res.status(401).json({ message: error.message });
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getAll(req: Request, res: Response) {
+  // Get all users (admin only)
+  async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const users = await this.userService.getUsers();
-      res.json(users);
-    } catch (error: any) {
-      res.status(401).json({ message: error.message });
+      res.json({ success: true, data: users });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getById(req: Request, res: Response) {
+  // Get user by ID
+  async getById(
+    req: Request<{ id: number }>,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const user = await this.userService.getUserById(+req.params.id);
-      res.json(user);
-    } catch (error: any) {
-      res.status(401).json({ message: error.message });
+      const user = await this.userService.getUserById(req.params.id);
+      res.json({ success: true, data: user });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async update(req: Request, res: Response) {
-
-        try {
-       const user = await this.userService.updateUser(+req.params.id, req.body);
-    res.json(user);
-    } catch (error: any) {
-      res.status(401).json({ message: error.message });
+  // Update user
+  async update(
+    req: Request<
+      { id: number },
+      {},
+      z.infer<typeof UserValidator.updateUserSchema>["body"]
+    >,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const user = await this.userService.updateUser(
+        req.params.id,
+        req.body as UpdateUserDTO,
+      );
+      res.json({ success: true, data: user });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async delete(req: Request, res: Response) {
-    await this.userService.deleteUser(+req.params.id);
-    res.json({ message: "User deleted successfully" });
+  // Delete user
+  async delete(
+    req: Request<{ id: number }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      await this.userService.deleteUser(req.params.id);
+      res.json({ success: true, message: "User deleted successfully" });
+    } catch (error) {
+      next(error);
+    }
   }
+
+  getAllPaginated = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+    const { page, pageSize } = paginationSchema.parse({ query: req.query }).query;
+
+        const result = await this.userService.getUsersPaginated(page, pageSize);
+      res.json(result);
+    } catch (error) {
+      this.logger.error("User Controller: GetAllPaginated Failed", error);
+      next(error);
+    }
+  };
 }

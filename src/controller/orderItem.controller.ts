@@ -5,6 +5,7 @@ import {
   UpdateOrderItemDTO,
 } from "../model/orderItem.model.js";
 import { Logger } from "utils/logger.js";
+import { paginationSchema } from "valildators/pagination.validator.js";
 
 export class OrderItemController {
   private service = new OrderItemService();
@@ -74,6 +75,20 @@ export class OrderItemController {
       res.json(items);
     } catch (error) {
       this.logger.error("OrderItem Controller: FindByOrderId Failed", error);
+      next(error);
+    }
+  };
+
+  getPaginated = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { page, pageSize } = paginationSchema.parse({
+        query: req.query,
+      }).query;
+
+      const result = await this.service.getOrderItemPaginated(page, pageSize);
+      res.json(result);
+    } catch (error) {
+      this.logger.error("Order Item Controller: GetPaginated Failed", error);
       next(error);
     }
   };

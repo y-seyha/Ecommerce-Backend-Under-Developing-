@@ -42,4 +42,24 @@ export class CartRepository {
     );
     return rows[0];
   }
+
+  async findAllPaginated(page: number, pageSize: number) {
+  const offset = (page - 1) * pageSize;
+
+  const { rows: data } = await this.pool.query(
+    `SELECT * FROM carts ORDER BY id LIMIT $1 OFFSET $2`,
+    [pageSize, offset],
+  );
+
+  const { rows } = await this.pool.query(`SELECT COUNT(*) FROM carts`);
+  const total = parseInt(rows[0].count, 10);
+
+  return {
+    data,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
 }

@@ -88,4 +88,13 @@ export class ProductService {
 
     return product;
   }
+
+  async getProductsPaginated(page: number, pageSize: number) {
+  try {
+    return await this.repo.findAllPaginated(page, pageSize);
+  } catch (error) {
+    this.logger.error("Product Service: GetPaginated Failed", error);
+    throw error;
+  }
+}
 }

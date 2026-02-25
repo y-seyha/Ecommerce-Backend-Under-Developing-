@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { CartService } from "service/cart.service.js";
 import { CreateCartDto, UpdateCartDto } from "model/cart.model.js";
 import { Logger } from "utils/logger.js";
+import { CartValidator } from "valildators/cart.validator.js";
+import { paginationSchema } from "valildators/pagination.validator.js";
 
 export class CartController {
   private service = new CartService();
@@ -58,6 +60,21 @@ export class CartController {
       res.json(cart);
     } catch (error) {
       this.logger.error("Cart Controller: FindById Failed", error);
+      next(error);
+    }
+  };
+
+  getPaginated = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Parse query safely
+      const { page, pageSize } = paginationSchema.parse({
+        query: req.query,
+      }).query;
+
+      const result = await this.service.getCartPaginated(page, pageSize);
+      res.json(result);
+    } catch (error) {
+      this.logger.error("Cart Controller: GetPaginated Failed", error);
       next(error);
     }
   };

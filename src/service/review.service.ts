@@ -16,16 +16,24 @@ export class ReviewService {
     }
 
     // Check if user exists
-    const { rows: userRows } = await this.pool.query(`SELECT id FROM users WHERE id=$1`, [dto.user_id]);
+    const { rows: userRows } = await this.pool.query(
+      `SELECT id FROM users WHERE id=$1`,
+      [dto.user_id],
+    );
     if (!userRows.length) {
       this.logger.warn(`Create Review Failed: User ${dto.user_id} not found`);
       throw new Error("User does not exist");
     }
 
     // Check if product exists
-    const { rows: productRows } = await this.pool.query(`SELECT id FROM products WHERE id=$1`, [dto.product_id]);
+    const { rows: productRows } = await this.pool.query(
+      `SELECT id FROM products WHERE id=$1`,
+      [dto.product_id],
+    );
     if (!productRows.length) {
-      this.logger.warn(`Create Review Failed: Product ${dto.product_id} not found`);
+      this.logger.warn(
+        `Create Review Failed: Product ${dto.product_id} not found`,
+      );
       throw new Error("Product does not exist");
     }
 
@@ -71,5 +79,14 @@ export class ReviewService {
 
   async getReviewsByUserId(user_id: number) {
     return this.repo.findByUserId(user_id);
+  }
+
+  async getReviewPaginated(page: number, pageSize: number) {
+    try {
+      return await this.repo.findAllPaginated(page, pageSize);
+    } catch (error) {
+      this.logger.error("Product Service : GetPaginated Failed", error);
+      throw Error;
+    }
   }
 }

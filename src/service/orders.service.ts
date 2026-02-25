@@ -70,4 +70,13 @@ export class OrderService {
     if (!order) this.logger.warn(`Order ${id} not found`);
     return order;
   }
+
+  async getOrderPaginated(page: number, pageSize: number) {
+  try {
+    return await this.repo.findAllPaginated(page, pageSize);
+  } catch (error) {
+    this.logger.error("Order Service: GetPaginated Failed", error);
+    throw error;
+  }
+}
 }

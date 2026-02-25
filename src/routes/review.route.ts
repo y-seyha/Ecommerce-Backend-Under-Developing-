@@ -8,7 +8,12 @@ import { ReviewValidator } from "valildators/review.validar.js";
 
 const router = Router();
 const controller = new ReviewController();
-
+router.get(
+  "/paginated",
+  authMiddleware,
+  authorizeRole("admin"),
+  controller.getAllPaginated.bind(controller),
+);
 // Public routes
 router.get("/", controller.findAll);
 router.get(
@@ -53,5 +58,7 @@ router.delete(
   validate(ReviewValidator.getReviewByIdSchema),
   controller.delete,
 );
+
+
 
 export default router;

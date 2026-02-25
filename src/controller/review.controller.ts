@@ -2,15 +2,20 @@ import { Request, Response, NextFunction } from "express";
 import { ReviewService } from "../service/review.service.js";
 import { CreateReviewDTO, UpdateReviewDTO } from "../model/review.model.js";
 import { Logger } from "utils/logger.js";
+import { z } from "zod";
+import { ReviewValidator } from "valildators/review.validar.js";
+import { paginationSchema } from "valildators/pagination.validator.js";
+
+type CreateReviewBody = z.infer<typeof ReviewValidator.createReviewSchema>["body"];
+type UpdateReviewBody = z.infer<typeof ReviewValidator.updateReviewSchema>["body"];
 
 export class ReviewController {
   private service = new ReviewService();
   private logger = Logger.getInstance();
 
-  create = async (req: Request, res: Response, next: NextFunction) => {
+  create = async (req: Request<{}, {}, CreateReviewBody>, res: Response, next: NextFunction) => {
     try {
-      const dto = req.body as CreateReviewDTO;
-      const review = await this.service.createReview(dto);
+      const review = await this.service.createReview(req.body as CreateReviewDTO);
       res.status(201).json(review);
     } catch (error) {
       this.logger.error("Review Controller: Create Failed", error);
@@ -18,11 +23,10 @@ export class ReviewController {
     }
   };
 
-  update = async (req: Request, res: Response, next: NextFunction) => {
+   update = async (req: Request<{ id: string }, {}, UpdateReviewBody>, res: Response, next: NextFunction) => {
     try {
       const id = +req.params.id;
-      const dto = req.body as UpdateReviewDTO;
-      const review = await this.service.updateReview(id, dto);
+      const review = await this.service.updateReview(id, req.body as UpdateReviewDTO);
       res.json(review);
     } catch (error) {
       this.logger.error("Review Controller: Update Failed", error);
@@ -30,7 +34,8 @@ export class ReviewController {
     }
   };
 
-  delete = async (req: Request, res: Response, next: NextFunction) => {
+
+    delete = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
     try {
       const id = +req.params.id;
       const success = await this.service.deleteReview(id);
@@ -42,7 +47,7 @@ export class ReviewController {
     }
   };
 
-  findAll = async (_: Request, res: Response, next: NextFunction) => {
+   findAll = async (_: Request, res: Response, next: NextFunction) => {
     try {
       const reviews = await this.service.getAllReviews();
       res.json(reviews);
@@ -52,7 +57,7 @@ export class ReviewController {
     }
   };
 
-  findById = async (req: Request, res: Response, next: NextFunction) => {
+ findById = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
     try {
       const id = +req.params.id;
       const review = await this.service.getReviewById(id);
@@ -64,7 +69,7 @@ export class ReviewController {
     }
   };
 
-  findByProductId = async (req: Request, res: Response, next: NextFunction) => {
+   findByProductId = async (req: Request<{ product_id: string }>, res: Response, next: NextFunction) => {
     try {
       const product_id = +req.params.product_id;
       const reviews = await this.service.getReviewsByProductId(product_id);
@@ -75,7 +80,7 @@ export class ReviewController {
     }
   };
 
-  findByUserId = async (req: Request, res: Response, next: NextFunction) => {
+ findByUserId = async (req: Request<{ user_id: string }>, res: Response, next: NextFunction) => {
     try {
       const user_id = +req.params.user_id;
       const reviews = await this.service.getReviewsByUserId(user_id);
@@ -85,4 +90,16 @@ export class ReviewController {
       next(error);
     }
   };
+
+    getAllPaginated = async (req: Request, res: Response, next: NextFunction) => {
+      try {
+      const { page, pageSize } = paginationSchema.parse({ query: req.query }).query;
+  
+          const result = await this.service.getReviewPaginated(page, pageSize);
+        res.json(result);
+      } catch (error) {
+        this.logger.error("User Controller: GetAllPaginated Failed", error);
+        next(error);
+      }
+    };
 }

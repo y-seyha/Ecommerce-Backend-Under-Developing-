@@ -8,7 +8,12 @@ import { PaymentValidator } from "valildators/payment.validator.js";
 
 const router = Router();
 const controller = new PaymentController();
-
+router.get(
+  "/paginated",
+  authMiddleware,
+  authorizeRole("admin"),
+  controller.getPaginated.bind(controller),
+);
 // CUSTOMER  create payment
 router.post(
   "/",
@@ -54,5 +59,7 @@ router.get(
   validate(PaymentValidator.getByOrderIdSchema),
   controller.findByOrderId,
 );
+
+
 
 export default router;

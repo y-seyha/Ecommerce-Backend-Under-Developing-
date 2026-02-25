@@ -62,4 +62,24 @@ export class ProductRepository {
   async delete(id: number): Promise<void> {
     await this.pool.query(`DELETE FROM products WHERE id=$1`, [id]);
   }
+
+  async findAllPaginated(page: number, pageSize: number) {
+    const offset = (page - 1) * pageSize;
+
+    const { rows: data } = await this.pool.query(
+      `SELECT * FROM products ORDER BY id LIMIT $1 OFFSET $2`,
+      [pageSize, offset],
+    );
+
+    const { rows } = await this.pool.query(`SELECT COUNT(*) FROM products`);
+    const total = parseInt(rows[0].count, 10);
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
 }

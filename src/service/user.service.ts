@@ -78,6 +78,19 @@ export class UserService {
     return safeUser;
   }
 
+  async deleteUser(id: number) {
+    const existingUser = await this.userRepo.findById(id);
+    if (!existingUser) {
+      logger.warn(`Delete failed: User not found - ${id}`);
+      throw new Error("User not found");
+    }
+
+    await this.userRepo.delete(id);
+    logger.info(`User deleted: ${id}`);
+
+    return { message: "User deleted successfully" };
+  }
+
   async getUsers() {
     const users = await this.userRepo.findAll();
     // Remove passwords
@@ -94,16 +107,11 @@ export class UserService {
     return safeUser;
   }
 
-  async deleteUser(id: number) {
-    const existingUser = await this.userRepo.findById(id);
-    if (!existingUser) {
-      logger.warn(`Delete failed: User not found - ${id}`);
-      throw new Error("User not found");
-    }
+  async getUsersPaginated(page: number = 1, pageSize: number = 5) {
+    const result = await this.userRepo.findAllPaginated(page, pageSize);
 
-    await this.userRepo.delete(id);
-    logger.info(`User deleted: ${id}`);
-
-    return { message: "User deleted successfully" };
+    // remove passwords
+    result.data = result.data.map(({ password, ...rest }) => rest);
+    return result;
   }
 }

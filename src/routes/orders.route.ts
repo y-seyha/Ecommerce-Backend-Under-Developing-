@@ -8,6 +8,12 @@ import { OrderValidator } from "valildators/order.validator.js";
 
 const router = Router();
 const controller = new OrderController();
+router.get(
+  "/paginated",
+  authMiddleware,
+  authorizeRole("admin"),
+  controller.getPaginated.bind(controller),
+);
 
 router.post(
   "/",
@@ -43,5 +49,6 @@ router.delete(
   authorizeRole("admin"),  validate(OrderValidator.getOrderByIdSchema),
   controller.delete,
 );
+
 
 export default router;

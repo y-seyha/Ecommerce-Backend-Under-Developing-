@@ -9,6 +9,14 @@ const router = Router();
 const controller = new ProductController();
 
 router.get("/", controller.findAll);
+
+router.get(
+  "/paginated",
+  authMiddleware,
+  authorizeRole("admin"),
+  controller.getPaginated.bind(controller),
+);
+
 router.get(
   "/:id",
   validate(ProductValidator.getProductByIdSchema),

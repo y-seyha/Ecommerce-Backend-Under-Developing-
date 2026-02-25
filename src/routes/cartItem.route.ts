@@ -7,6 +7,12 @@ import { CartItemValidator } from "valildators/cartItem.validator.js";
 
 const router = Router();
 const controller = new CartItemController();
+router.get(
+  "/paginated",
+  authMiddleware,
+  authorizeRole("admin"),
+  controller.getPaginated.bind(controller),
+);
 
 router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
 router.get(

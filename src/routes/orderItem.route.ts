@@ -8,7 +8,12 @@ import { OrderItemValidator } from "valildators/orderItem.validator.js";
 
 const router = Router();
 const controller = new OrderItemController();
-
+router.get(
+  "/paginated",
+  authMiddleware,
+  authorizeRole("admin"),
+  controller.getPaginated.bind(controller),
+);
 // ADMIN only
 router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
 
@@ -47,5 +52,6 @@ router.delete(
   validate(OrderItemValidator.getOrderItemByIdSchema),
   controller.delete,
 );
+
 
 export default router;

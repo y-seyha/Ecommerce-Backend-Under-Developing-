@@ -75,4 +75,13 @@ export class CartItemService {
     }
     return item;
   }
+
+  async getCartItemPaginated(page: number, pageSize: number) {
+    try {
+      return await this.repo.findAllPaginated(page, pageSize);
+    } catch (error) {
+      this.logger.error("Cart Item Service: GetPaginated Failed", error);
+      throw error;
+    }
+  }
 }
