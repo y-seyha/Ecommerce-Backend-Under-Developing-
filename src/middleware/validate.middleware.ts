@@ -31,7 +31,6 @@ export const validate =
           errors: issues,
         });
       }
-
       next(error);
     }
   };
