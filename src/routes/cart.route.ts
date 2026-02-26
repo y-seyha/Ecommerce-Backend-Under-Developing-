@@ -9,6 +9,13 @@ import { CartValidator } from "valildators/cart.validator.js";
 const router = Router();
 const controller = new CartController();
 
+router.get(
+  "/:id",
+  authMiddleware,
+  authorizeRoleOrSelf("admin"),
+  validate(CartValidator.getCartByIdSchema),
+  controller.findById,
+);
 router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
 router.get(
   "/paginated",
@@ -16,13 +23,6 @@ router.get(
   authorizeRole("admin"),
   validate(CartValidator.getPaginatedSchema),
   controller.getPaginated.bind(controller),
-);
-router.get(
-  "/:id",
-  authMiddleware,
-  authorizeRoleOrSelf("admin"),
-  validate(CartValidator.getCartByIdSchema),
-  controller.findById,
 );
 
 router.post(

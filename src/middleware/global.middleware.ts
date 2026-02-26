@@ -28,7 +28,7 @@ export const helmetMiddleware = helmet({
 
 export const globalRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1minutes
-  max: 5, // 100 requests per IP
+  max: 100, // 100 requests per IP
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {

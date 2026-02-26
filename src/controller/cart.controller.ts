@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { CartService } from "service/cart.service.js";
 import { CreateCartDto, UpdateCartDto } from "model/cart.model.js";
 import { Logger } from "utils/logger.js";
-import { CartValidator } from "valildators/cart.validator.js";
 import { paginationSchema } from "valildators/pagination.validator.js";
 
 export class CartController {
@@ -26,6 +25,10 @@ export class CartController {
       const id = +req.params.id;
       const dto = req.body as UpdateCartDto;
       const cart = await this.service.updateCart(id, dto);
+      res.json({
+        message: "Cart updated successfully",
+        cart,
+      });
     } catch (error) {
       this.logger.error("Cart Controller: Update Failed", error);
       next(error);
