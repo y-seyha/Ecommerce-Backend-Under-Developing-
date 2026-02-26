@@ -45,7 +45,10 @@ export class CartItemController {
       const id = +req.params.id;
       const dto = req.body as UpdateCartItemDto;
       const item = await this.service.updateCartItem(id, dto);
-      res.json(item);
+      res.json({
+        message: "Cart updated successfully",
+        data: item,
+      });
     } catch (error) {
       this.logger.error("CartItem Controller: Update Failed", error);
       next(error);
@@ -73,6 +76,25 @@ export class CartItemController {
       res.json(result);
     } catch (error) {
       this.logger.error("Cart Item Controller: GetPaginated Failed", error);
+      next(error);
+    }
+  };
+
+  getItemsByCartId = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const cartId = +req.params.cartId;
+      const items = await this.service.getItemsByCartId(cartId);
+
+      res.json({
+        cartId,
+        items,
+      });
+    } catch (error) {
+      this.logger.error("CartItem Controller: getItemsByCartId Failed", error);
       next(error);
     }
   };

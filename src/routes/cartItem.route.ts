@@ -4,6 +4,7 @@ import { authMiddleware } from "middleware/authMiddleware.js";
 import { authorizeRole } from "middleware/roleMiddleware.js";
 import { validate } from "middleware/validate.middleware.js";
 import { CartItemValidator } from "valildators/cartItem.validator.js";
+import { authorizeRoleOrSelf } from "middleware/authorizedRoleOrSelf.middleware.js";
 
 const router = Router();
 const controller = new CartItemController();
@@ -20,6 +21,12 @@ router.get(
   authMiddleware,
   validate(CartItemValidator.getCartItemByIdSchema),
   controller.findById,
+);
+router.get(
+  "/cart/:cartId/items",
+  authMiddleware,
+  authorizeRoleOrSelf("admin"), 
+  controller.getItemsByCartId,
 );
 router.post(
   "/",
