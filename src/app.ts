@@ -16,6 +16,7 @@ import {
   globalRateLimiter,
   helmetMiddleware,
 } from "middleware/global.middleware.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.set("trust proxy", 1);
 app.use(globalRateLimiter);
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/users", userRoute);

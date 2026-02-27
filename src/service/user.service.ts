@@ -44,14 +44,15 @@ export class UserService {
       throw new Error("Invalid credentials");
     }
 
+    logger.info(`User logged in: ${user.email}`);
+
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET as string,
+      process.env.JWT_SECRET!,
       { expiresIn: "1d" },
     );
 
-    logger.info(`User logged in: ${user.email}`);
-
+    //Remove password
     const { password, ...safeUser } = user;
     return { user: safeUser, token };
   }

@@ -36,8 +36,15 @@ export class UserController {
   ) {
     try {
       const { email, password } = req.body;
-      const data = await this.userService.login({ email, password });
-      res.json({ success: true, data });
+      const { user, token } = await this.userService.login({ email, password });
+
+      res.cookie("accessToken", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+      });
+      res.json({ success: true, data: user });
     } catch (error) {
       next(error);
     }
@@ -104,9 +111,11 @@ export class UserController {
 
   getAllPaginated = async (req: Request, res: Response, next: NextFunction) => {
     try {
-    const { page, pageSize } = paginationSchema.parse({ query: req.query }).query;
+      const { page, pageSize } = paginationSchema.parse({
+        query: req.query,
+      }).query;
 
-        const result = await this.userService.getUsersPaginated(page, pageSize);
+      const result = await this.userService.getUsersPaginated(page, pageSize);
       res.json(result);
     } catch (error) {
       this.logger.error("User Controller: GetAllPaginated Failed", error);

@@ -5,5 +5,8 @@ declare global {
     interface Request {
       user?: IUser;
     }
+    interface Response {
+      cookie(name: string, value: string, options?: any): this;
+    }
   }
 }
