@@ -5,6 +5,7 @@ import {
   CreateOrderItemDTO,
   UpdateOrderItemDTO,
 } from "../model/orderItem.model.js";
+import redisClient from "Configuration/redis.js";
 
 export class OrderItemService {
   private repo = new OrderItemRepository();
@@ -39,7 +40,17 @@ export class OrderItemService {
       throw new Error("Quantity and price must be greater than 0");
     }
 
-    return await this.repo.insert(dto);
+    const item = await this.repo.insert(dto);
+
+      try {
+      const cacheKey = `orderItem:${item.id}`;
+      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(item));
+    } catch (error) {
+      this.logger.warn("OrderItem Service: Redis Error on createOrderItem", error);
+      throw new Error("Cannot Create Order")
+    }
+
+    return item; 
   }
 
   async updateOrderItem(id: number, dto: UpdateOrderItemDTO) {
@@ -49,7 +60,16 @@ export class OrderItemService {
       throw new Error("OrderItem does not exist");
     }
 
-    return await this.repo.update(id, dto);
+    const updated = await this.repo.update(id, dto);
+     try {
+      const cacheKey = `orderItem:${id}`;
+      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(updated));
+    } catch (error) {
+      this.logger.warn("Order Item Service: Redis Error on updateOrderItem", error);
+      throw new Error("Cannout update cart items")
+    }
+
+    return updated; 
   }
 
   async deleteOrderItem(id: number) {
@@ -58,21 +78,65 @@ export class OrderItemService {
       this.logger.warn(`Delete OrderItem Failed: Item ${id} not found`);
       return false;
     }
-    return await this.repo.delete(id);
+    const deleted =  await this.repo.delete(id);
+      try {
+      const cacheKey = `orderItem:${id}`;
+      await redisClient.del(cacheKey);
+    } catch (error) {
+      this.logger.warn("OrderItem service: Redis Error on deleteOrderItem", error);
+      throw new Error(`Order Items ${id} not found`)
+    }
+
+    return deleted; 
   }
 
   async getAllOrderItems() {
     return await this.repo.findAll();
   }
 
-  async getOrderItemById(id: number) {
-    const item = await this.repo.findById(id);
-    if (!item) this.logger.warn(`OrderItem ${id} not found`);
-    return item;
+  async getOrderItemById(id: number) { 
+    const cacheKey = `orderItem:${id}`;
+
+   try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
+      const item = await this.repo.findById(id);
+      if (!item) {
+        this.logger.warn(`OrderItem ${id} not found`);
+        return null;
+      }
+
+      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(item));
+      return item;
+    } catch (error) {
+      this.logger.warn("Redis Error in getOrderItemById", error);
+      const item = await this.repo.findById(id);
+      if (!item) this.logger.warn(`OrderItem ${id} not found`);
+      return item;
+    }
   }
 
-  async getItemsByOrderId(order_id: number) {
-    return await this.repo.findByOrderId(order_id);
+ async getItemsByOrderId(order_id: number) {
+    const cacheKey = `orderItems:order:${order_id}`;
+
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
+      const items = await this.repo.findByOrderId(order_id);
+
+      await redisClient.setEx(
+        cacheKey,
+        24 * 60 * 60,
+        JSON.stringify(items)
+      );
+
+      return items;
+    } catch (error) {
+      this.logger.warn("Redis Error in getItemsByOrderId", error);
+      return await this.repo.findByOrderId(order_id);
+    }
   }
 
   async getOrderItemPaginated(page: number, pageSize: number) {

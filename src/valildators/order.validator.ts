@@ -25,7 +25,5 @@ export class OrderValidator {
   // Get / Delete by ID
   static getOrderByIdSchema: ZodObject<ZodRawShape> = z.object({
     params: z.object({ id: z.coerce.number() }),
-    body: z.object({}),
-    query: z.object({}),
   });
 }

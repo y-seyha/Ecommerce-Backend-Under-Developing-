@@ -1,4 +1,5 @@
 import { Database } from "Configuration/database.js";
+import redisClient from "Configuration/redis.js";
 import { CreateOrderDTO, UpdateOrderDTO } from "dto/orders.dto.js";
 import { rawListeners } from "node:cluster";
 import { OrderRepository } from "repository/orders.repository.js";
@@ -26,7 +27,16 @@ export class OrderService {
       throw new Error("Total price must be greater than 0");
     }
 
-    return await this.repo.insert(dto);
+    const order = await this.repo.insert(dto);
+
+    try {
+      const cacheKey = `order:${order.id}`;
+      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(order));
+    } catch (error) {
+      this.logger.warn("Order Service: Redis failed", error);
+      throw new Error("Order Service: Cannot Create Order");
+    }
+    return rows[0];
   }
 
   async updateOder(id: number, dto: UpdateOrderDTO) {
@@ -48,7 +58,16 @@ export class OrderService {
     }
 
     const updateOrder = { ...existing, ...dto };
-    return await this.repo.update(id, updateOrder);
+    const updated = await this.repo.update(id, updateOrder);
+
+    try {
+      const cacheKey = `order:${id}`;
+      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(updated));
+    } catch (error) {
+      this.logger.warn("Order service: Redis error", error);
+      throw new Error("Order service: Cannot Update Order");
+    }
+    return updated;
   }
 
   async deleteOrder(id: number) {
@@ -58,7 +77,17 @@ export class OrderService {
       return false;
     }
 
-    return await this.repo.delete(id);
+    const deleted = await this.repo.delete(id);
+
+    try {
+      const cacheKey = `order:${id}`;
+      await redisClient.del(cacheKey);
+    } catch (error) {
+      this.logger.error("Order Service: Redis Error on deleteOrder", error);
+      throw new Error("Order Service: Cannot delete order");
+    }
+
+    return deleted;
   }
 
   async getAllOrders() {
@@ -66,17 +95,34 @@ export class OrderService {
   }
 
   async getOrderById(id: number) {
+    const cacheKey = `order:${id}`;
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
+      const order = await this.repo.findById(id);
+      if (!order) {
+        this.logger.warn(`Order ${id} not found`);
+        throw new Error("Order not found");
+      }
+
+      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(order));
+      return order;
+    } catch (error) {
+      this.logger.warn("Order Service: Redis error", error);
+      throw new Error(`Order Service: Cannout getOrderbyID ${id}`);
+    }
     const order = await this.repo.findById(id);
     if (!order) this.logger.warn(`Order ${id} not found`);
     return order;
   }
 
   async getOrderPaginated(page: number, pageSize: number) {
-  try {
-    return await this.repo.findAllPaginated(page, pageSize);
-  } catch (error) {
-    this.logger.error("Order Service: GetPaginated Failed", error);
-    throw error;
+    try {
+      return await this.repo.findAllPaginated(page, pageSize);
+    } catch (error) {
+      this.logger.error("Order Service: GetPaginated Failed", error);
+      throw error;
+    }
   }
-}
 }

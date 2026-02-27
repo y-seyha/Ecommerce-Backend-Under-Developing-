@@ -12,7 +12,7 @@ export class OrderController {
     try {
       const dto = req.body as CreateOrderDTO;
       const order = await this.service.createOrder(dto);
-      res.status(201).json(order);
+      res.status(201).json({ order });
     } catch (error) {
       this.logger.error("Order Controller: Create Failed", error);
       next(error);

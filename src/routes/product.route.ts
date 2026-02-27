@@ -18,7 +18,7 @@ router.get(
   authorizeRole("admin"),
   controller.getPaginated.bind(controller),
 );
-// router.post("/", upload.single("image"), controller.create);
+
 router.post(
   "/upload-image",
   authMiddleware,

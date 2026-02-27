@@ -16,6 +16,13 @@ router.get(
 );
 // ADMIN only
 router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
+router.post(
+  "/",
+  authMiddleware,
+  authorizeRole("admin", "seller"),
+  validate(OrderItemValidator.createOrderItemSchema),
+  controller.create.bind(controller),
+);
 
 // OWNER or ADMIN
 router.get(
@@ -52,6 +59,5 @@ router.delete(
   validate(OrderItemValidator.getOrderItemByIdSchema),
   controller.delete,
 );
-
 
 export default router;

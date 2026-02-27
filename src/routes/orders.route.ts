@@ -18,7 +18,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
-  authorizeRole("customer"),
+  authorizeRole("customer", "admin", "seller"),
   validate(OrderValidator.createOrderSchema),
   controller.create,
 );
@@ -30,7 +30,8 @@ router.get("/", authMiddleware, authorizeRole("admin"), controller.findAll);
 router.get(
   "/:id",
   authMiddleware,
-  authorizeOrderOwnerOrAdmin(),  validate(OrderValidator.getOrderByIdSchema),
+  authorizeOrderOwnerOrAdmin(),
+  validate(OrderValidator.getOrderByIdSchema),
   controller.findById,
 );
 
@@ -38,7 +39,8 @@ router.get(
 router.put(
   "/:id",
   authMiddleware,
-  authorizeRole("seller", "admin"), validate(OrderValidator.updateOrderSchema),
+  authorizeRole("seller", "admin"),
+  validate(OrderValidator.updateOrderSchema),
   controller.update,
 );
 
@@ -46,9 +48,9 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
-  authorizeRole("admin"),  validate(OrderValidator.getOrderByIdSchema),
+  authorizeRole("admin"),
+  validate(OrderValidator.getOrderByIdSchema),
   controller.delete,
 );
-
 
 export default router;

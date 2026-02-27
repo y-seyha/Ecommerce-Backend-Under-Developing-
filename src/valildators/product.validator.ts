@@ -27,7 +27,6 @@ export class ProductValidator {
 
   static getProductByIdSchema: ZodObject<ZodRawShape> = z.object({
     params: z.object({ id: z.coerce.number() }),
-    body: z.object({}),
-    query: z.object({}),
+
   });
 }

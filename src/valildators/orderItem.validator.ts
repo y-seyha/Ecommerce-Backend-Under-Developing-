@@ -26,14 +26,11 @@ export class OrderItemValidator {
   // Get / Delete by ID
   static getOrderItemByIdSchema: ZodObject<ZodRawShape> = z.object({
     params: z.object({ id: z.coerce.number() }),
-    body: z.object({}),
-    query: z.object({}),
+
   });
 
   // Get items by order_id
   static getByOrderIdSchema: ZodObject<ZodRawShape> = z.object({
     params: z.object({ order_id: z.coerce.number() }),
-    body: z.object({}),
-    query: z.object({}),
   });
 }
