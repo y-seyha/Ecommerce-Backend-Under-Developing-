@@ -10,13 +10,18 @@ import orderItemRoutes from "./routes/orderItem.route.js";
 import paymentRoutes from "./routes/payment.route.js";
 import reviewRoutes from "./routes/review.route.js";
 
+import authRoutes from "./routes/auth.route.js";
+import session, { SessionOptions } from "express-session";
+
 import {
   corsMiddleware,
   errorHandler,
   globalRateLimiter,
   helmetMiddleware,
 } from "middleware/global.middleware.js";
+import "./Configuration/passport.js";
 import cookieParser from "cookie-parser";
+import passport from "passport";
 
 const app = express();
 
@@ -32,6 +37,23 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+const sessionOptions: SessionOptions = {
+  secret: process.env.SESSION_SECRET!, // your secret string
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    sameSite: "strict",
+  },
+};
+
+app.use(session(sessionOptions));
+// Passport init
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use("/api/users", userRoute);
 app.use("/api/products", productRoute);
 app.use("/api/categories", categoryRoutes);
@@ -41,6 +63,8 @@ app.use("/api/orders", ordersRoute);
 app.use("/api/order-items", orderItemRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
+//authroute
+app.use("/api/v1/auth", authRoutes);
 
 // Add version prefix v1 will implement in the future (Microservice)
 app.use("/api/v1/users", userRoute);
@@ -52,6 +76,7 @@ app.use("/api/v1/orders", ordersRoute);
 app.use("/api/v1/order-items", orderItemRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/reviews", reviewRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 app.use(errorHandler);
 

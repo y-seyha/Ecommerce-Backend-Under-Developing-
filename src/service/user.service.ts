@@ -115,4 +115,57 @@ export class UserService {
     result.data = result.data.map(({ password, ...rest }) => rest);
     return result;
   }
+
+  async findOrCreateGoogleUser(profile: {
+    email: string;
+    name: string;
+    googleId: string;
+  }) {
+    let user = await this.userRepo.findByEmail(profile.email);
+
+    const [first_name, last_name] = profile.name.split(" ");
+
+    if (!user) {
+      // Create new user
+      user = await this.userRepo.create({
+        email: profile.email,
+        first_name: first_name || profile.name,
+        last_name: last_name || "",
+        googleId: profile.googleId,
+        provider: "google",
+        role: "customer",
+        is_verified: true,
+        password: "",
+      });
+    } else {
+      // Update missing Google info if needed
+      let updated = false;
+
+      const updateData: Partial<IUser> = {};
+
+      if (!user.googleId && profile.googleId) {
+        updateData.googleId = profile.googleId;
+        updated = true;
+      }
+
+      if (user.provider !== "google") {
+        updateData.provider = "google";
+        updated = true;
+      }
+
+      if (!user.is_verified) {
+        updateData.is_verified = true;
+        updated = true;
+      }
+
+      if (updated) {
+        user = await this.userRepo.update(user.id!, {
+          ...user,
+          ...updateData,
+        });
+      }
+    }
+
+    return user;
+  }
 }

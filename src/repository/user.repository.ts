@@ -11,9 +11,26 @@ export class UserRepository {
 
   async create(user: Omit<IUser, "id">): Promise<IUser> {
     const result = await this.db.query(
-      `INSERT INTO users(first_name,last_name,email,password,role)
-       VALUES($1,$2,$3,$4,$5) RETURNING *`,
-      [user.first_name, user.last_name, user.email, user.password, user.role],
+      `INSERT INTO users(
+        first_name,
+        last_name,
+        email,
+        password,
+        role,
+        provider,
+        google_id,
+        is_verified
+      ) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [
+        user.first_name,
+        user.last_name,
+        user.email,
+        user.password,
+        user.role,
+        user.provider || "local",
+        user.googleId || null,
+        user.is_verified || false,
+      ],
     );
 
     return result.rows[0];
@@ -45,14 +62,27 @@ export class UserRepository {
   async update(id: number, user: IUser): Promise<IUser> {
     const result = await this.db.query(
       `UPDATE users
-       SET first_name=$1,last_name=$2,email=$3,password=$4,role=$5,updated_at=NOW()
-       WHERE id=$6 RETURNING *`,
+     SET 
+       first_name = $1,
+       last_name = $2,
+       email = $3,
+       password = $4,
+       role = $5,
+       provider = $6,
+       google_id = $7,
+       is_verified = $8,
+       updated_at = NOW()
+     WHERE id = $9
+     RETURNING *`,
       [
         user.first_name,
         user.last_name,
         user.email,
         user.password,
         user.role,
+        user.provider || "local",
+        user.googleId || null,
+        user.is_verified || false,
         id,
       ],
     );

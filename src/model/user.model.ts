@@ -9,4 +9,10 @@ export interface IUser {
   role?: UserRole;
   created_at?: Date;
   updated_at?: Date;
+  googleId?: string;
+  provider?: "local" | "google" | "facebook";
+  is_verified?: boolean;
+}
+export interface IGoogleUserResponse extends IUser {
+  accessToken: string;
 }
