@@ -38,7 +38,7 @@ export class UserService {
       throw new Error("Invalid credentials");
     }
 
-    const isMatch = await bcrypt.compare(data.password, user.password);
+    const isMatch = await bcrypt.compare(data.password, user.password || "");
     if (!isMatch) {
       logger.warn(`Login failed: Wrong password - ${data.email}`);
       throw new Error("Invalid credentials");
@@ -119,53 +119,37 @@ export class UserService {
   async findOrCreateGoogleUser(profile: {
     email: string;
     name: string;
-    googleId: string;
+    provider: "google" | "facebook" | "github";
+    providerAccountId: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: Date;
   }) {
     let user = await this.userRepo.findByEmail(profile.email);
 
     const [first_name, last_name] = profile.name.split(" ");
 
     if (!user) {
-      // Create new user
+      // Create new user without password
       user = await this.userRepo.create({
         email: profile.email,
         first_name: first_name || profile.name,
         last_name: last_name || "",
-        googleId: profile.googleId,
-        provider: "google",
         role: "customer",
         is_verified: true,
-        password: "",
+        password: undefined,
       });
-    } else {
-      // Update missing Google info if needed
-      let updated = false;
-
-      const updateData: Partial<IUser> = {};
-
-      if (!user.googleId && profile.googleId) {
-        updateData.googleId = profile.googleId;
-        updated = true;
-      }
-
-      if (user.provider !== "google") {
-        updateData.provider = "google";
-        updated = true;
-      }
-
-      if (!user.is_verified) {
-        updateData.is_verified = true;
-        updated = true;
-      }
-
-      if (updated) {
-        user = await this.userRepo.update(user.id!, {
-          ...user,
-          ...updateData,
-        });
-      }
     }
 
+    // Create or update OAuth account in accounts table
+    await this.userRepo.createOrUpdateAccount({
+      userId: user.id!,
+      provider: profile.provider,
+      provider_account_id: profile.providerAccountId,
+      access_token: profile.accessToken ?? null,
+      refresh_token: profile.refreshToken ?? null,
+      expires_at: profile.expiresAt ?? null,
+    });
     return user;
   }
 }

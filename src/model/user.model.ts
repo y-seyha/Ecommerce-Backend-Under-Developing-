@@ -5,14 +5,27 @@ export interface IUser {
   first_name: string;
   last_name: string;
   email: string;
-  password: string;
+  password?: string; 
   role?: UserRole;
+  is_verified?: boolean; 
   created_at?: Date;
   updated_at?: Date;
-  googleId?: string;
-  provider?: "local" | "google" | "facebook";
-  is_verified?: boolean;
 }
-export interface IGoogleUserResponse extends IUser {
-  accessToken: string;
+
+
+export interface IAccount {
+  id?: number;
+  userId: number;
+  provider: "google" | "facebook" | "github";
+  provider_account_id: string;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  expires_at?: Date | null;
+  created_at?: Date;
+}
+
+
+export interface IOAuthUserResponse {
+  user: IUser;
+  account: IAccount;
 }

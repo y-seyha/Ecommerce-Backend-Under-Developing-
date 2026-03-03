@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import passport from "passport";
-import { IGoogleUserResponse } from "model/user.model.js";
+import { IUser, IAccount, IOAuthUserResponse } from "model/user.model.js";
+import { UserService } from "service/user.service.js";
+
+const userService = new UserService();
 
 export class AuthController {
-
+  // Initiate Google login
   googleLogin(req: Request, res: Response, next: NextFunction) {
     passport.authenticate("google", { scope: ["profile", "email"] })(
       req,
@@ -17,7 +20,7 @@ export class AuthController {
     passport.authenticate(
       "google",
       { session: false },
-      async (err, user: IGoogleUserResponse | false, info) => {
+      async (err, user: IOAuthUserResponse | false, info) => {
         try {
           if (err || !user) {
             return res.status(401).json({
@@ -27,19 +30,23 @@ export class AuthController {
             });
           }
 
-          // user now has accessToken
-          const { accessToken, ...userData } = user;
+          const { user: userData, account } = user;
 
-          // Set cookie
-          res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 24 * 60 * 60 * 1000,
+          // Set cookie with accessToken from account
+          if (account.access_token) {
+            res.cookie("accessToken", account.access_token, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "strict",
+              maxAge: 24 * 60 * 60 * 1000, // 1 day
+            });
+          }
+
+          res.json({
+            success: true,
+            data: userData,
+            accessToken: account.access_token,
           });
-
-          // Send response
-          res.json({ success: true, data: userData, accessToken });
         } catch (error) {
           next(error);
         }

@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { Database } from "Configuration/database.js";
-import { IUser } from "model/user.model.js";
+import { IAccount, IUser } from "model/user.model.js";
 
 export class UserRepository {
   private db: Pool;
@@ -12,23 +12,19 @@ export class UserRepository {
   async create(user: Omit<IUser, "id">): Promise<IUser> {
     const result = await this.db.query(
       `INSERT INTO users(
-        first_name,
-        last_name,
-        email,
-        password,
-        role,
-        provider,
-        google_id,
-        is_verified
-      ) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      first_name,
+      last_name,
+      email,
+      password,
+      role,
+      is_verified
+    ) VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
       [
         user.first_name,
         user.last_name,
         user.email,
-        user.password,
-        user.role,
-        user.provider || "local",
-        user.googleId || null,
+        user.password || "",
+        user.role || "customer",
         user.is_verified || false,
       ],
     );
@@ -78,10 +74,8 @@ export class UserRepository {
         user.first_name,
         user.last_name,
         user.email,
-        user.password,
-        user.role,
-        user.provider || "local",
-        user.googleId || null,
+        user.password || null,
+        user.role || "customer",
         user.is_verified || false,
         id,
       ],
@@ -117,5 +111,44 @@ export class UserRepository {
         totalPages: Math.ceil(total / pageSize),
       },
     };
+  }
+
+  async createOrUpdateAccount(account: IAccount) {
+    const existing = await this.db.query(
+      `SELECT * FROM accounts
+       WHERE provider=$1 AND provider_account_id=$2`,
+      [account.provider, account.provider_account_id],
+    );
+
+    if (existing.rows.length > 0) {
+      // Update tokens if they exist
+      return this.db.query(
+        `UPDATE accounts
+         SET access_token=$1, refresh_token=$2, expires_at=$3
+         WHERE id=$4
+         RETURNING *`,
+        [
+          account.access_token || null,
+          account.refresh_token || null,
+          account.expires_at || null,
+          existing.rows[0].id,
+        ],
+      );
+    } else {
+      // Create new OAuth account
+      return this.db.query(
+        `INSERT INTO accounts(
+          user_id, provider, provider_account_id, access_token, refresh_token, expires_at
+        ) VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
+        [
+          account.userId,
+          account.provider,
+          account.provider_account_id,
+          account.access_token ?? null,
+          account.refresh_token ?? null,
+          account.expires_at ?? null,
+        ],
+      );
+    }
   }
 }

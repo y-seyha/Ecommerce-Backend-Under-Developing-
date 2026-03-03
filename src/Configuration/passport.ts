@@ -1,11 +1,10 @@
-import { IGoogleUserResponse } from "model/user.model.js";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { UserService } from "service/user.service.js";
+import { IOAuthUserResponse } from "model/user.model.js";
 
 const userService = new UserService();
 
-// Google OAuth Strategy
 passport.use(
   new GoogleStrategy(
     {
@@ -21,25 +20,31 @@ passport.use(
 
         const email = profile.emails[0].value;
         const name = profile.displayName || "";
-        const googleId = profile.id;
+        const providerAccountId = profile.id;
 
-        // Get or create user
+        // Use the new service method
         const user = await userService.findOrCreateGoogleUser({
           email,
           name,
-          googleId,
+          provider: "google",
+          providerAccountId,
+          accessToken,
+          refreshToken,
         });
 
-        // Build response with default values
-        const response: IGoogleUserResponse = {
-          ...user,
-          googleId: user.googleId || googleId,
-          provider: user.provider || "google",
-          is_verified: user.is_verified ?? true,
-          accessToken, 
+        // Build response combining user + account
+        const response: IOAuthUserResponse = {
+          user,
+          account: {
+            userId: user.id!,
+            provider: "google",
+            provider_account_id: providerAccountId,
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          },
         };
 
-        return done(null, response); // return the response with token
+        return done(null, response);
       } catch (error) {
         console.error("Google OAuth error:", error);
         return done(new Error("Google login failed"), false);
@@ -50,14 +55,16 @@ passport.use(
 
 // Serialize user for session
 passport.serializeUser((user: any, done) => {
-  // Only save minimal info in session
-  done(null, { id: user.id, email: user.email, role: user.role });
+  done(null, {
+    id: user.user.id,
+    email: user.user.email,
+    role: user.user.role,
+  });
 });
 
 // Deserialize user from session
 passport.deserializeUser(async (userSession: any, done) => {
   try {
-    // You can fetch full user from DB if needed
     const user = await userService.getUserById(userSession.id);
     done(null, user);
   } catch (err) {
