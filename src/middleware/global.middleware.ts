@@ -7,9 +7,13 @@ import { Request, Response, NextFunction } from "express";
 const logger = Logger.getInstance();
 
 export const corsMiddleware = cors({
-  origin: ["https://my-frontend.com", "https://another-site.com"],
+  origin: [
+    "https://my-frontend.com",
+    "https://another-site.com",
+    "http://localhost:5173",
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
   maxAge: 600,
 });

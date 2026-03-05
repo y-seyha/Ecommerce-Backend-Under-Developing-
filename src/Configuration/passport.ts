@@ -28,10 +28,22 @@ passport.use(
         const name = profile.displayName || "";
         const providerAccountId = profile.id;
 
+        const fullName = profile.displayName || "";
+        let first_name = "";
+        let last_name = "";
+
+        if (fullName) {
+          const nameParts = fullName.trim().split(" ");
+          first_name = nameParts[0];
+          last_name = nameParts.slice(1).join(" "); // join the rest as last name
+        }
+
         // Use the new service method
         const user = await userService.findOrCreateSocialUser({
           email,
           name,
+          first_name, // <-- add this
+          last_name,
           provider: "google",
           providerAccountId,
           accessToken,

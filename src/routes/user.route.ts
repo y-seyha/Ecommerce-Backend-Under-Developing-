@@ -9,6 +9,8 @@ import { authorizeRoleOrSelf } from "middleware/authorizedRoleOrSelf.middleware.
 const router = Router();
 const controller = new UserController();
 
+router.get("/me", authMiddleware, controller.getMe.bind(controller));
+
 //Paginatd users (admin)
 router.get(
   "/paginated",

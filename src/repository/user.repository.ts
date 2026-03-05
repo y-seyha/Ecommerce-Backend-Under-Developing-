@@ -29,7 +29,8 @@ export class UserRepository {
       ],
     );
 
-    return result.rows[0];
+    const newUser: IUser = result.rows[0];
+    return newUser;
   }
 
   async findAll(): Promise<IUser[]> {

@@ -118,6 +118,8 @@ export class UserService {
   async findOrCreateSocialUser(profile: {
     email: string;
     name: string;
+    first_name?: string;
+    last_name?: string;
     provider: "google" | "facebook" | "github";
     providerAccountId: string;
     accessToken?: string;
@@ -127,13 +129,21 @@ export class UserService {
     try {
       // Check if user already exists
       let user = await this.userRepo.findByEmail(profile.email);
+
       if (user) {
         logger.info(
           `Social login: Existing user found - email: ${profile.email}, provider: ${profile.provider}`,
         );
       } else {
-        // Split first and last name
-        const [first_name, last_name] = profile.name.split(" ");
+        // Use passed first_name/last_name, fallback to splitting name
+        let first_name = profile.first_name;
+        let last_name = profile.last_name;
+
+        if (!first_name || !last_name) {
+          const parts = profile.name.trim().split(" ");
+          first_name = first_name || parts[0];
+          last_name = last_name || parts.slice(1).join(" ");
+        }
 
         // Create new user
         user = await this.userRepo.create({
@@ -141,7 +151,7 @@ export class UserService {
           first_name: first_name || profile.name,
           last_name: last_name || "",
           role: "customer",
-          is_verified: true, // OAuth users are trusted
+          is_verified: true,
           password: undefined,
         });
 

@@ -3,9 +3,11 @@ import passport from "passport";
 import { IUser, IOAuthUserResponse } from "model/user.model.js";
 import { UserService } from "service/user.service.js";
 import { Logger } from "../utils/logger.js";
+import jwt from "jsonwebtoken";
 
 const userService = new UserService();
 const logger = Logger.getInstance();
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 export class AuthController {
   // Google login
@@ -41,16 +43,16 @@ export class AuthController {
             res.cookie("accessToken", account.access_token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
-              sameSite: "strict",
+              sameSite: "lax",
               maxAge: 24 * 60 * 60 * 1000, // 1 day
             });
           }
-
-          res.json({
-            success: true,
-            data: userData,
-            accessToken: account.access_token,
-          });
+          res.redirect(`${FRONTEND_URL}/`);
+          // res.json({
+          //   success: true,
+          //   data: userData,
+          //   accessToken: account.access_token,
+          // });
         } catch (error) {
           logger.error("Google callback error", { error });
           next(error);
@@ -91,12 +93,12 @@ export class AuthController {
               maxAge: 24 * 60 * 60 * 1000,
             });
           }
-
-          res.json({
-            success: true,
-            data: userData,
-            accessToken: account.access_token,
-          });
+          res.redirect(`${FRONTEND_URL}/`);
+          // res.json({
+          //   success: true,
+          //   data: userData,
+          //   accessToken: account.access_token,
+          // });
         } catch (error) {
           logger.error("Facebook callback error", { error });
           next(error);
@@ -137,12 +139,12 @@ export class AuthController {
               maxAge: 24 * 60 * 60 * 1000,
             });
           }
-
-          res.json({
-            success: true,
-            data: userData,
-            accessToken: account.access_token,
-          });
+          res.redirect(`${FRONTEND_URL}/?login=success`);
+          // res.json({
+          //   success: true,
+          //   data: userData,
+          //   accessToken: account.access_token,
+          // });
         } catch (error) {
           logger.error("GitHub callback error", { error });
           next(error);
@@ -175,6 +177,80 @@ export class AuthController {
       });
     } catch (error) {
       logger.error("Logout exception", { error });
+      next(error);
+    }
+  }
+
+  async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      // Get refreshToken from cookie
+      const refreshToken = req.cookies.refreshToken;
+      if (!refreshToken) {
+        return res.status(401).json({
+          success: false,
+          message: "No refresh token provided",
+        });
+      }
+
+      // Verify refresh token
+      const secret = process.env.JWT_REFRESH_SECRET!;
+      let payload: any;
+      try {
+        payload = jwt.verify(refreshToken, secret);
+      } catch (err) {
+        logger.warn("Invalid refresh token", { error: err });
+        return res.status(403).json({
+          success: false,
+          message: "Invalid refresh token",
+        });
+      }
+
+      // Find user in DB
+      const user: IUser | null = await userService.getUserById(payload.userId);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      // Generate new access token
+      const accessToken = jwt.sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_ACCESS_SECRET!,
+        { expiresIn: "15m" },
+      );
+
+      // Optional: refresh the refresh token as well
+      const newRefreshToken = jwt.sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_REFRESH_SECRET!,
+        { expiresIn: "7d" },
+      );
+
+      // Send tokens in cookies
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000, // 15 mins
+      });
+
+      res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      logger.info("Access token refreshed", { userId: user.id });
+
+      res.json({
+        success: true,
+        data: { user },
+        accessToken,
+      });
+    } catch (error) {
+      logger.error("Refresh token error", { error });
       next(error);
     }
   }

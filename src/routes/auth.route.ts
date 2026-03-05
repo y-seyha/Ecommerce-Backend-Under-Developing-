@@ -19,4 +19,7 @@ router.get("/github/callback", authController.githubCallback.bind(authController
 //logout
 router.post("/logout", authController.logout.bind(authController));
 
+// auth.routes.ts
+router.get("/refresh", authController.refreshToken.bind(authController));
+
 export default router;
