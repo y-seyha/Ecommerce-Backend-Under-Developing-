@@ -54,11 +54,48 @@ export class ReviewRepository {
     return result.rows[0] || null;
   }
 
-  async findAll(): Promise<Review[]> {
-    const result = await this.pool.query(
-      `SELECT * FROM reviews ORDER BY created_at DESC`,
-    );
-    return result.rows;
+  async findAll(): Promise<any[]> {
+    const { rows } = await this.pool.query(`
+    SELECT
+        r.id AS review_id,
+        r.rating,
+        r.comment,
+        r.created_at AS review_created_at,
+        u.id AS user_id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        p.id AS product_id,
+        p.name AS product_name,
+        p.price AS product_price,
+        p.stock AS product_stock,
+        p.image_url AS product_image
+    FROM reviews r
+    LEFT JOIN users u ON r.user_id = u.id
+    LEFT JOIN products p ON r.product_id = p.id
+    ORDER BY r.created_at DESC
+  `);
+
+    // Transform flat rows into structured review objects
+    return rows.map((row) => ({
+      id: row.review_id,
+      rating: row.rating,
+      comment: row.comment,
+      created_at: row.review_created_at,
+      user: {
+        id: row.user_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        email: row.email,
+      },
+      product: {
+        id: row.product_id,
+        name: row.product_name,
+        price: row.product_price,
+        stock: row.product_stock,
+        image: row.product_image,
+      },
+    }));
   }
 
   async findByProductId(product_id: number): Promise<Review[]> {

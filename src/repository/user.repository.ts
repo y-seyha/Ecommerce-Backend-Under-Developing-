@@ -17,8 +17,9 @@ export class UserRepository {
       email,
       password,
       role,
-      is_verified
-    ) VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
+      is_verified,
+      phone
+   ) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [
         user.first_name,
         user.last_name,
@@ -26,6 +27,7 @@ export class UserRepository {
         user.password || "",
         user.role || "customer",
         user.is_verified || false,
+        user.phone || null,
       ],
     );
 
@@ -68,8 +70,9 @@ export class UserRepository {
        provider = $6,
        google_id = $7,
        is_verified = $8,
+        phone = $9,
        updated_at = NOW()
-     WHERE id = $9
+     WHERE id = $10
      RETURNING *`,
       [
         user.first_name,
@@ -78,6 +81,7 @@ export class UserRepository {
         user.password || null,
         user.role || "customer",
         user.is_verified || false,
+        user.phone || null,
         id,
       ],
     );

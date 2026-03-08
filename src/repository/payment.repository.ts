@@ -5,19 +5,13 @@ import { Payment } from "model/payment.model.js";
 export class PaymentRepository {
   private pool = Database.getInstance();
 
-  async insert(dto: CreatePaymentDTO): Promise<Payment> {
-    const result = await this.pool.query(
-      `INSERT INTO payments (order_id, amount, method, status, paid_at)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [
-        dto.order_id,
-        dto.amount,
-        dto.method,
-        dto.status || "pending",
-        dto.paid_at || null,
-      ],
+  async insert(order_id: number, amount: number, method: "cod" | "card") {
+    const { rows } = await this.pool.query(
+      `INSERT INTO payments (order_id, amount, method)
+       VALUES ($1,$2,$3) RETURNING *`,
+      [order_id, amount, method],
     );
-    return result.rows[0];
+    return rows[0];
   }
 
   async update(id: number, dto: UpdatePaymentDTO): Promise<Payment | null> {
@@ -67,11 +61,52 @@ export class PaymentRepository {
     return result.rows[0] || null;
   }
 
-  async findAll(): Promise<Payment[]> {
-    const result = await this.pool.query(
-      `SELECT * FROM payments ORDER BY created_at DESC`,
-    );
-    return result.rows;
+  async findAll(): Promise<any[]> {
+    const { rows } = await this.pool.query(`
+    SELECT
+        p.id AS payment_id,
+        p.amount,
+        p.method,
+        p.status AS payment_status,
+        p.paid_at,
+        p.created_at AS payment_created_at,
+        p.updated_at AS payment_updated_at,
+        o.id AS order_id,
+        o.total_price AS order_total_price,
+        o.status AS order_status,
+        o.created_at AS order_created_at,
+        u.id AS user_id,
+        u.first_name,
+        u.last_name,
+        u.email
+    FROM payments p
+    LEFT JOIN orders o ON p.order_id = o.id
+    LEFT JOIN users u ON o.user_id = u.id
+    ORDER BY p.created_at DESC
+  `);
+
+    // Transform flat rows into structured payment objects
+    return rows.map((row) => ({
+      id: row.payment_id,
+      amount: row.amount,
+      method: row.method,
+      status: row.payment_status,
+      paid_at: row.paid_at,
+      created_at: row.payment_created_at,
+      updated_at: row.payment_updated_at,
+      order: {
+        id: row.order_id,
+        total_price: row.order_total_price,
+        status: row.order_status,
+        created_at: row.order_created_at,
+        user: {
+          id: row.user_id,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          email: row.email,
+        },
+      },
+    }));
   }
 
   async findByOrderId(order_id: number): Promise<Payment[]> {

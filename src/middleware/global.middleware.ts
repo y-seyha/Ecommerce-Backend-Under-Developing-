@@ -12,7 +12,7 @@ export const corsMiddleware = cors({
     "https://another-site.com",
     "http://localhost:5173",
   ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
   maxAge: 600,

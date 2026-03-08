@@ -4,11 +4,13 @@ import jwt from "jsonwebtoken";
 import { Logger } from "../utils/logger.js";
 import { CreateUserDTO, LoginUserDTO, UpdateUserDTO } from "dto/user.dto.js";
 import { mapUpdateUserDTOToIUser } from "utils/userMapper.js";
+import { CartService } from "./cart.service.js";
 
 const logger = Logger.getInstance();
 
 export class UserService {
   private userRepo = new UserRepository();
+  private cartService = new CartService();
 
   async register(userData: CreateUserDTO) {
     const existingUser = await this.userRepo.findByEmail(userData.email);
@@ -22,9 +24,12 @@ export class UserService {
       ...userData,
       password: hashedPassword,
       role: userData.role || "customer",
+      phone: userData.phone,
     });
 
     logger.info(`New user registered successfully: ${newUser.email}`);
+
+    await this.cartService.createCart({ user_id: newUser.id! });
 
     const { password, ...safeUser } = newUser;
     return safeUser;
@@ -45,6 +50,15 @@ export class UserService {
 
     logger.info(`User logged in: ${user.email}`);
 
+    let userCart = await this.cartService.getCartById(user.id!); // ! because id exists after DB insert
+    if (!userCart) {
+      // Create a new cart if none exists
+      userCart = await this.cartService.createCart({ user_id: user.id! });
+      logger.info(
+        `New cart created for user ${user.email}, cartId=${userCart.id}`,
+      );
+    }
+
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET!,
@@ -53,7 +67,7 @@ export class UserService {
 
     //Remove password
     const { password, ...safeUser } = user;
-    return { user: safeUser, token };
+    return { user: safeUser, token, cartId: userCart.id };
   }
 
   async updateUser(id: number, dto: UpdateUserDTO) {

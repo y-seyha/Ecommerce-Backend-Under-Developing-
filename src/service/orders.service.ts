@@ -1,45 +1,46 @@
 import { Database } from "Configuration/database.js";
 import redisClient from "Configuration/redis.js";
 import { CreateOrderDTO, UpdateOrderDTO } from "dto/orders.dto.js";
-import { rawListeners } from "node:cluster";
+
+import { OrderItemRepository } from "repository/orderItem.repository.js";
 import { OrderRepository } from "repository/orders.repository.js";
+import { PaymentRepository } from "repository/payment.repository.js";
 import { Logger } from "utils/logger.js";
+
+type OrderInsert = Omit<CreateOrderDTO, "items" | "payment_method">;
 
 export class OrderService {
   private repo = new OrderRepository();
   private logger = Logger.getInstance();
   private pool = Database.getInstance();
+  private orderItemRepo = new OrderItemRepository();
+  private paymentRepo = new PaymentRepository();
 
   async createOrder(dto: CreateOrderDTO) {
-    const { rows } = await this.pool.query(`SELECT * FROM users WHERE id=$1`, [
-      dto.user_id,
-    ]);
+    if (!dto.items || !dto.items.length)
+      throw new Error("Order must include at least one item");
 
-    if (!rows.length) {
-      this.logger.warn(`Create Order Failed: User ${dto.user_id} not found`);
-      throw new Error("User does not exist");
-    }
-
-    if (dto.total_price <= 0) {
-      this.logger.warn(
-        `Create Order Failed: Invalid total price ${dto.total_price}`,
-      );
-      throw new Error("Total price must be greater than 0");
-    }
-
+    // Insert order
     const order = await this.repo.insert(dto);
 
-    try {
-      const cacheKey = `order:${order.id}`;
-      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(order));
-    } catch (error) {
-      this.logger.warn("Order Service: Redis failed", error);
-      throw new Error("Order Service: Cannot Create Order");
-    }
-    return rows[0];
+    // Insert order items
+    const orderItems = await this.orderItemRepo.insert(order.id, dto.items);
+
+    // Insert payment
+    const payment = await this.paymentRepo.insert(
+      order.id,
+      dto.total_price,
+      dto.payment_method || "cod",
+    );
+
+    return {
+      order,
+      items: orderItems,
+      payment,
+    };
   }
 
-  async updateOder(id: number, dto: UpdateOrderDTO) {
+  async updateOrder(id: number, dto: UpdateOrderDTO) {
     const existing = await this.repo.findById(id);
     if (!existing) {
       this.logger.warn(`Update Order Failed: Order ${id} not found`);
@@ -57,16 +58,16 @@ export class OrderService {
       }
     }
 
-    const updateOrder = { ...existing, ...dto };
-    const updated = await this.repo.update(id, updateOrder);
+    const updated = await this.repo.update(id, dto);
 
     try {
       const cacheKey = `order:${id}`;
       await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(updated));
     } catch (error) {
-      this.logger.warn("Order service: Redis error", error);
+      this.logger.warn("Order Service: Redis error", error);
       throw new Error("Order service: Cannot Update Order");
     }
+
     return updated;
   }
 

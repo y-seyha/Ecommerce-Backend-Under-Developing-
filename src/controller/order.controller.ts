@@ -10,9 +10,17 @@ export class OrderController {
 
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
+     
       const dto = req.body as CreateOrderDTO;
-      const order = await this.service.createOrder(dto);
-      res.status(201).json({ order });
+
+      if (!dto.items || !dto.items.length) {
+        return res
+          .status(400)
+          .json({ message: "Order must include at least one item" });
+      }
+
+      const result = await this.service.createOrder(dto);
+      res.status(201).json(result); 
     } catch (error) {
       this.logger.error("Order Controller: Create Failed", error);
       next(error);
@@ -23,7 +31,7 @@ export class OrderController {
     try {
       const id = +req.params.id;
       const dto = req.body as UpdateOrderDTO;
-      const order = await this.service.updateOder(id, dto);
+      const order = await this.service.updateOrder(id, dto);
       res.json(order);
     } catch (error) {
       this.logger.error("Order Controller: Update Failed", error);

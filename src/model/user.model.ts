@@ -5,13 +5,13 @@ export interface IUser {
   first_name: string;
   last_name: string;
   email: string;
-  password?: string; 
+  password?: string;
   role?: UserRole;
-  is_verified?: boolean; 
+  phone?: string;
+  is_verified?: boolean;
   created_at?: Date;
   updated_at?: Date;
 }
-
 
 export interface IAccount {
   id?: number;
@@ -23,7 +23,6 @@ export interface IAccount {
   expires_at?: Date | null;
   created_at?: Date;
 }
-
 
 export interface IOAuthUserResponse {
   user: IUser;

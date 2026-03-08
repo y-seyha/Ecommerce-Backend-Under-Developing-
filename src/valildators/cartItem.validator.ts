@@ -3,7 +3,7 @@ import z, { ZodObject, ZodRawShape } from "zod";
 export class CartItemValidator {
   static createCartItemSchema: ZodObject<ZodRawShape> = z.object({
     body: z.object({
-      cart_id: z.coerce.number(),
+      cart_id: z.coerce.number().optional(),
       product_id: z.coerce.number(),
       quantity: z.number().int().min(1),
     }),

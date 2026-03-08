@@ -6,6 +6,7 @@ export interface CreateUserDTO {
   first_name: string;
   last_name: string;
   email: string;
+  phone: string;
   password: string;
   role?: UserRole;
 }
@@ -19,6 +20,7 @@ export interface UpdateUserDTO {
   first_name?: string;
   last_name?: string;
   password?: string;
+  phone: string;
   role?: UserRole;
 }
 
@@ -41,4 +43,3 @@ export interface UpdateUserDTO {
   password?: string; // will be hashed in service
   role?: UserRole; // optional, only admin can update
 }
-

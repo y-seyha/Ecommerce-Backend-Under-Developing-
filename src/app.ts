@@ -9,6 +9,7 @@ import ordersRoute from "./routes/orders.route.js";
 import orderItemRoutes from "./routes/orderItem.route.js";
 import paymentRoutes from "./routes/payment.route.js";
 import reviewRoutes from "./routes/review.route.js";
+import checkout from "./routes/checkout.route.js";
 
 import authRoutes from "./routes/auth.route.js";
 import session, { SessionOptions } from "express-session";
@@ -38,7 +39,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 const sessionOptions: SessionOptions = {
-  secret: process.env.SESSION_SECRET!, // your secret string
+  secret: process.env.SESSION_SECRET!, 
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -76,6 +77,7 @@ app.use("/api/v1/orders", ordersRoute);
 app.use("/api/v1/order-items", orderItemRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/reviews", reviewRoutes);
+app.use("/api/v1/checkout", checkout);
 app.use("/api/v1/auth", authRoutes);
 
 app.use(errorHandler);

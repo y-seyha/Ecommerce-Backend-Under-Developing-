@@ -17,40 +17,55 @@ export class OrderItemService {
       `SELECT id FROM orders WHERE id=$1`,
       [dto.order_id],
     );
-    if (!orderRows.length) {
-      this.logger.warn(
-        `Create OrderItem Failed: Order ${dto.order_id} not found`,
-      );
-      throw new Error("Order does not exist");
-    }
+    if (!orderRows.length) throw new Error("Order does not exist");
 
     const { rows: productRows } = await this.pool.query(
-      `SELECT id FROM products WHERE id=$1`,
+      `SELECT id, price FROM products WHERE id=$1`,
       [dto.product_id],
     );
-    if (!productRows.length) {
-      this.logger.warn(
-        `Create OrderItem Failed: Product ${dto.product_id} not found`,
+    if (!productRows.length) throw new Error("Product does not exist");
+
+    if (dto.quantity <= 0) throw new Error("Quantity must be greater than 0");
+
+    // Check if product already exists in this order
+    const { rows: existingRows } = await this.pool.query(
+      `SELECT id, quantity FROM order_items WHERE order_id=$1 AND product_id=$2`,
+      [dto.order_id, dto.product_id],
+    );
+
+    let item;
+    if (existingRows.length) {
+      // Update existing quantity
+      const newQuantity = existingRows[0].quantity + dto.quantity;
+      const { rows: updatedRows } = await this.pool.query(
+        `UPDATE order_items SET quantity=$1, price=$2, updated_at=NOW() WHERE id=$3 RETURNING *`,
+        [newQuantity, productRows[0].price * newQuantity, existingRows[0].id],
       );
-      throw new Error("Product does not exist");
+      item = updatedRows[0];
+    } else {
+      // Insert new row
+      const { rows: insertedRows } = await this.pool.query(
+        `INSERT INTO order_items (order_id, product_id, quantity, price, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *`,
+        [
+          dto.order_id,
+          dto.product_id,
+          dto.quantity,
+          productRows[0].price * dto.quantity,
+        ],
+      );
+      item = insertedRows[0];
     }
 
-    if (dto.quantity <= 0 || dto.price <= 0) {
-      this.logger.warn(`Create OrderItem Failed: Invalid quantity or price`);
-      throw new Error("Quantity and price must be greater than 0");
-    }
-
-    const item = await this.repo.insert(dto);
-
-      try {
+    // Update Redis cache
+    try {
       const cacheKey = `orderItem:${item.id}`;
       await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(item));
     } catch (error) {
-      this.logger.warn("OrderItem Service: Redis Error on createOrderItem", error);
-      throw new Error("Cannot Create Order")
+      this.logger.warn("Redis Error on create/updateOrderItem", error);
     }
 
-    return item; 
+    return item;
   }
 
   async updateOrderItem(id: number, dto: UpdateOrderItemDTO) {
@@ -61,15 +76,18 @@ export class OrderItemService {
     }
 
     const updated = await this.repo.update(id, dto);
-     try {
+    try {
       const cacheKey = `orderItem:${id}`;
       await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(updated));
     } catch (error) {
-      this.logger.warn("Order Item Service: Redis Error on updateOrderItem", error);
-      throw new Error("Cannout update cart items")
+      this.logger.warn(
+        "Order Item Service: Redis Error on updateOrderItem",
+        error,
+      );
+      throw new Error("Cannout update cart items");
     }
 
-    return updated; 
+    return updated;
   }
 
   async deleteOrderItem(id: number) {
@@ -78,26 +96,29 @@ export class OrderItemService {
       this.logger.warn(`Delete OrderItem Failed: Item ${id} not found`);
       return false;
     }
-    const deleted =  await this.repo.delete(id);
-      try {
+    const deleted = await this.repo.delete(id);
+    try {
       const cacheKey = `orderItem:${id}`;
       await redisClient.del(cacheKey);
     } catch (error) {
-      this.logger.warn("OrderItem service: Redis Error on deleteOrderItem", error);
-      throw new Error(`Order Items ${id} not found`)
+      this.logger.warn(
+        "OrderItem service: Redis Error on deleteOrderItem",
+        error,
+      );
+      throw new Error(`Order Items ${id} not found`);
     }
 
-    return deleted; 
+    return deleted;
   }
 
   async getAllOrderItems() {
     return await this.repo.findAll();
   }
 
-  async getOrderItemById(id: number) { 
+  async getOrderItemById(id: number) {
     const cacheKey = `orderItem:${id}`;
 
-   try {
+    try {
       const cached = await redisClient.get(cacheKey);
       if (cached) return JSON.parse(cached);
 
@@ -117,7 +138,7 @@ export class OrderItemService {
     }
   }
 
- async getItemsByOrderId(order_id: number) {
+  async getItemsByOrderId(order_id: number) {
     const cacheKey = `orderItems:order:${order_id}`;
 
     try {
@@ -126,11 +147,7 @@ export class OrderItemService {
 
       const items = await this.repo.findByOrderId(order_id);
 
-      await redisClient.setEx(
-        cacheKey,
-        24 * 60 * 60,
-        JSON.stringify(items)
-      );
+      await redisClient.setEx(cacheKey, 24 * 60 * 60, JSON.stringify(items));
 
       return items;
     } catch (error) {
