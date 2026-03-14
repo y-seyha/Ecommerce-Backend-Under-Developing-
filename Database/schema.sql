@@ -1,17 +1,18 @@
---  Users Table
+-- Users Table
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, phone VARCHAR(50),
+    password VARCHAR(255), -- allow null for OAuth users
+    phone VARCHAR(50),
     role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('customer', 'admin', 'seller')),
     is_verified BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Account table
+-- Accounts Table (OAuth)
 CREATE TABLE accounts (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -21,10 +22,11 @@ CREATE TABLE accounts (
     refresh_token TEXT,
     expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(provider, provider_account_id)
+    UNIQUE(provider, provider_account_id),
+    UNIQUE(user_id, provider)
 );
 
---  Categories Table
+-- Categories Table
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -33,42 +35,42 @@ CREATE TABLE categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Products Table
+-- Products Table
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
     description TEXT,
     price NUMERIC(10,2) NOT NULL,
     stock INT DEFAULT 0,
-    category_id INT REFERENCES categories(id),
+    category_id INT REFERENCES categories(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     image_url VARCHAR(500),
     image_public_id VARCHAR(255)
 );
 
---  Carts Table
+-- Carts Table
 CREATE TABLE carts (
     id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id),
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Cart Items Table
+-- Cart Items Table
 CREATE TABLE cart_items (
     id SERIAL PRIMARY KEY,
     cart_id INT REFERENCES carts(id) ON DELETE CASCADE,
-    product_id INT REFERENCES products(id),
+    product_id INT REFERENCES products(id) ON DELETE SET NULL,
     quantity INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Orders Table
+-- Orders Table
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id),
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     total_price NUMERIC(10,2) NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'completed', 'cancelled'
+    status VARCHAR(50) DEFAULT 'pending',
     shipping_name VARCHAR(150),     
     shipping_phone VARCHAR(50),     
     shipping_address TEXT,          
@@ -77,36 +79,35 @@ CREATE TABLE orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Order Items Table
+-- Order Items Table
 CREATE TABLE order_items (
     id SERIAL PRIMARY KEY,
     order_id INT REFERENCES orders(id) ON DELETE CASCADE,
-    product_id INT REFERENCES products(id),
+    product_id INT REFERENCES products(id) ON DELETE SET NULL,
     quantity INT NOT NULL,
     price NUMERIC(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Payments Table
+-- Payments Table
 CREATE TABLE payments (
     id SERIAL PRIMARY KEY,
     order_id INT REFERENCES orders(id) ON DELETE CASCADE,
     amount NUMERIC(10,2) NOT NULL,
-    method VARCHAR(50) NOT NULL, -- 'card', 'paypal', etc.
-    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'completed', 'failed'
+    method VARCHAR(50) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
     paid_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Reviews Table
+-- Reviews Table
 CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id),
-    product_id INT REFERENCES products(id),
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    product_id INT REFERENCES products(id) ON DELETE SET NULL,
     rating INT CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-

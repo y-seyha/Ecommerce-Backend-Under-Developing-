@@ -27,11 +27,11 @@ export class OrderService {
     const orderItems = await this.orderItemRepo.insert(order.id, dto.items);
 
     // Insert payment
-    const payment = await this.paymentRepo.insert(
-      order.id,
-      dto.total_price,
-      dto.payment_method || "cod",
-    );
+    const payment = await this.paymentRepo.insert({
+      order_id: order.id,
+      amount: dto.total_price,
+      method: dto.payment_method || "cod",
+    });
 
     return {
       order,

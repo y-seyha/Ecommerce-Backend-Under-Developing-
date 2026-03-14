@@ -37,7 +37,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
-  authorizeRole("customer"),
+  authorizeRole("customer", "admin"),
   validate(ReviewValidator.createReviewSchema),
   controller.create,
 );
