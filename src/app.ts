@@ -1,6 +1,6 @@
 import express from "express";
 
-import userRoute from "./routes/user.route.js";
+// import userRoute from "./routes/user.route.js";
 import productRoute from "./routes/product.route.js";
 import categoryRoutes from "./routes/category.route.js";
 import cartRoutes from "./routes/cart.route.js";
@@ -57,7 +57,7 @@ app.use(session(sessionOptions));
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use("/api/users", userRoute);
+// app.use("/api/users", userRoute);
 app.use("/api/products", productRoute);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/carts", cartRoutes);
@@ -70,7 +70,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/v1/auth", authRoutes);
 
 // Add version prefix v1 will implement in the future (Microservice)
-app.use("/api/v1/users", userRoute);
+// app.use("/api/v1/users", userRoute);
 app.use("/api/v1/products", productRoute);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/carts", cartRoutes);

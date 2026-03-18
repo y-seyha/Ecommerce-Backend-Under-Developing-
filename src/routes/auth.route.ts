@@ -16,7 +16,7 @@ import {
   meHandler,
 } from "../controller/auth.controller.js";
 
-import { validate } from "middleware/validate.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
 import {
   loginValidator,
   registerValidator,
@@ -33,7 +33,8 @@ const router = Router();
 // Auth routes
 router.post("/register", validate(registerValidator), register);
 router.post("/login", validate(loginValidator), login);
-router.get("/verify-email", validate(verifyEmailValidator), verifyEmailHandler);
+// router.get("/verify-email", validate(verifyEmailValidator), verifyEmailHandler);
+router.get("/verify-email", verifyEmailHandler);
 router.get("/me", meHandler);
 
 //  Forgot & Reset password
@@ -50,27 +51,27 @@ router.post(
 
 // Logout & Refresh token
 router.post("/logout", logoutHandler);
-router.post("/refresh-token", refreshTokenHandler);
+router.get("/refresh-token", refreshTokenHandler);
 
 //  Social logins
 router.get("/google", googleLoginHandler);
 router.get(
   "/google/callback",
-  validate(googleCallbackValidator),
+  // validate(googleCallbackValidator),
   googleCallbackHandler,
 );
 
 router.get("/facebook", facebookLoginHandler);
 router.get(
   "/facebook/callback",
-  validate(facebookCallbackValidator),
+  // validate(facebookCallbackValidator),
   facebookCallbackHandler,
 );
 
 router.get("/github", githubLoginHandler);
 router.get(
   "/github/callback",
-  validate(githubCallbackValidator),
+  // validate(githubCallbackValidator),
   githubCallbackHandler,
 );
 

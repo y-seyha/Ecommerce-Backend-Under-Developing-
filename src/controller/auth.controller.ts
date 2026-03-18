@@ -220,19 +220,21 @@ export const login = async (req: Request, res: Response) => {
     });
 
     // Set refresh token cookie
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 15 * 60 * 1000, // 15 min
+    });
+
+    // Send refresh token in HttpOnly cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true in prod
+      sameSite: "strict",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // Return tokens + user info
@@ -377,18 +379,22 @@ export const googleCallbackHandler = async (req: Request, res: Response) => {
   if (!code) return res.status(400).send("Code not provided");
 
   try {
-    // Exchange code for tokens
+    // 1. Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Get user info
+    // 2. Get user info from Google
     const oauth2 = google.oauth2({ auth: oauth2Client, version: "v2" });
     const { data } = await oauth2.userinfo.get();
     const email = data.email!;
-    const name = data.name!;
+    const fullName = data.name!; // full name from Google
     const avatar = data.picture;
 
-    //  Check if user exists by email
+    // Split full name into first and last
+    const [first_name, ...rest] = fullName.split(" ");
+    const last_name = rest.join(" ") || null;
+
+    // 3. Check if user exists by email
     let userResult = await pool.query(`SELECT * FROM users WHERE email = $1`, [
       email,
     ]);
@@ -396,16 +402,17 @@ export const googleCallbackHandler = async (req: Request, res: Response) => {
     let user = userResult.rows[0];
 
     if (!user) {
-      //  User doesn't exist → create user
+      // 4. User doesn't exist → create user
       const userInsert = await pool.query(
-        `INSERT INTO users (email, name, email_verified, role, avatar_url)
-         VALUES ($1, $2, TRUE, 'user', $3) RETURNING *`,
-        [email, name, avatar],
+        `INSERT INTO users (email, first_name, last_name, role, avatar_url, is_verified)
+         VALUES ($1, $2, $3, 'customer', $4, TRUE)
+         RETURNING *`,
+        [email, first_name, last_name, avatar],
       );
       user = userInsert.rows[0];
     }
 
-    //  Check if Google account exists
+    // 5. Check if Google account exists
     const accountResult = await pool.query(
       `SELECT * FROM accounts WHERE user_id = $1 AND provider = 'google'`,
       [user.id],
@@ -426,7 +433,7 @@ export const googleCallbackHandler = async (req: Request, res: Response) => {
       );
     }
 
-    //  Generate JWT
+    // 6. Generate JWT
     const accessToken = generateAccessToken({
       userId: user.id,
       role: user.role,
@@ -436,6 +443,7 @@ export const googleCallbackHandler = async (req: Request, res: Response) => {
       role: user.role,
     });
 
+    // 7. Set refresh token cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -444,17 +452,8 @@ export const googleCallbackHandler = async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
-      message: "Google login successful",
-      accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar_url: user.avatar_url,
-      },
-    });
+    // 8. Redirect to frontend OAuth success page
+    res.redirect("http://localhost:5173/oauth-success");
   } catch (err: any) {
     console.error(err);
     res.status(500).send("Google OAuth failed");
@@ -484,7 +483,7 @@ export const facebookCallbackHandler = async (req: Request, res: Response) => {
     );
     const tokenData: FacebookTokenResponse = await tokenRes.json();
 
-    // Fetch Facebook user info
+    //  Fetch Facebook user info
     const userRes = await fetch(
       `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${tokenData.access_token}`,
     );
@@ -502,35 +501,51 @@ export const facebookCallbackHandler = async (req: Request, res: Response) => {
 
     await client.query("BEGIN");
 
-    // Check if this Facebook account already exists
-    let accountResult = await client.query(
-      `SELECT a.*, u.* FROM accounts a
-       JOIN users u ON u.id = a.user_id
-       WHERE a.provider = 'facebook' AND a.provider_account_id = $1`,
+    // Check if Facebook account already exists
+    const accountResult = await client.query(
+      `SELECT a.*, u.id as user_id, u.email, u.first_name, u.last_name, u.role, u.avatar_url
+   FROM accounts a
+   JOIN users u ON u.id = a.user_id
+   WHERE a.provider = 'facebook' AND a.provider_account_id = $1`,
       [email],
     );
 
-    let user = accountResult.rows[0]?.u;
+    let user = accountResult.rows[0];
 
-    // If no Facebook account, check if a user exists with the same email
-    if (!user) {
+    if (user) {
+      // Account exists → just update access token
+      await client.query(
+        `UPDATE accounts SET access_token = $1 WHERE provider = 'facebook' AND provider_account_id = $2`,
+        [tokenData.access_token, email],
+      );
+      // Map flat columns to user object
+      user = {
+        id: user.user_id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+        avatar_url: user.avatar_url,
+      };
+    } else {
+      // Account does not exist → check if a user exists with this email
       const existingUserResult = await client.query(
         `SELECT * FROM users WHERE email = $1`,
         [email],
       );
       user = existingUserResult.rows[0];
 
-      // If no user at all, create a new user
+      // If no user → create new user
       if (!user) {
         const userInsert = await client.query(
           `INSERT INTO users (email, first_name, last_name, is_verified, role, avatar_url)
-   VALUES ($1, $2, $3, TRUE, 'customer', $4) RETURNING *`,
+           VALUES ($1, $2, $3, TRUE, 'customer', $4) RETURNING *`,
           [email, first_name, last_name, avatar],
         );
         user = userInsert.rows[0];
       }
 
-      // Create a new Facebook account linked to this user
+      // Create Facebook account linked to this user
       await client.query(
         `INSERT INTO accounts (user_id, provider, provider_account_id, access_token)
          VALUES ($1, 'facebook', $2, $3)`,
@@ -540,7 +555,7 @@ export const facebookCallbackHandler = async (req: Request, res: Response) => {
 
     await client.query("COMMIT");
 
-    // Generate JWT tokens
+    //  Generate JWT tokens
     const accessToken = generateAccessToken({
       userId: user.id,
       role: user.role,
@@ -550,7 +565,7 @@ export const facebookCallbackHandler = async (req: Request, res: Response) => {
       role: user.role,
     });
 
-    // Set refresh token in HttpOnly cookie
+    //  Set refresh token in HttpOnly cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -559,18 +574,8 @@ export const facebookCallbackHandler = async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
-      message: "Facebook login successful",
-      accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role,
-        avatar_url: user.avatar_url,
-      },
-    });
+    // 6. Redirect to frontend
+    res.redirect("http://localhost:5173/oauth-success");
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -695,19 +700,19 @@ export const githubCallbackHandler = async (req: Request, res: Response) => {
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
-    res.json({
-      message: "GitHub login successful",
-      accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role,
-        avatar_url: user.avatar_url,
-      },
-    });
+    res.redirect("http://localhost:5173/oauth-success");
+    // res.json({
+    //   message: "GitHub login successful",
+    //   accessToken,
+    //   user: {
+    //     id: user.id,
+    //     email: user.email,
+    //     first_name: user.first_name,
+    //     last_name: user.last_name,
+    //     role: user.role,
+    //     avatar_url: user.avatar_url,
+    //   },
+    // });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -750,11 +755,19 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
       role: user.role,
     });
 
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60 * 1000, // 15 min
+    });
+
     // Set new refresh token in HttpOnly cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -768,21 +781,12 @@ export const refreshTokenHandler = async (req: Request, res: Response) => {
 
 export const meHandler = async (req: Request, res: Response) => {
   try {
-    const token = req.cookies.accessToken; // read token from cookie
-    if (!token)
-      return res.status(401).json({ message: "No access token provided" });
+    const token = req.cookies.accessToken; // read from cookie
+    if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-    let payload: any;
-    try {
-      payload = verifyAccessToken(token);
-    } catch (err) {
-      return res
-        .status(401)
-        .json({ message: "Invalid or expired access token" });
-    }
-
+    const payload: any = verifyAccessToken(token);
     const userResult = await pool.query(
-      `SELECT id, email, first_name, last_name, role, phone, avatar_url, is_verified, created_at, updated_at
+      `SELECT id, email, first_name, last_name, role, is_verified, avatar_url
        FROM users WHERE id = $1`,
       [payload.userId],
     );
@@ -793,6 +797,6 @@ export const meHandler = async (req: Request, res: Response) => {
     res.json({ user });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(401).json({ message: "Invalid or expired token" });
   }
 };

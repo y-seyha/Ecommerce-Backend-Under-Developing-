@@ -1,19 +1,13 @@
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import { Logger } from "utils/logger.js";
+import { Logger } from "../utils/logger.js";
 import { Request, Response, NextFunction } from "express";
 
 const logger = Logger.getInstance();
 
 export const corsMiddleware = cors({
-  origin: [
-    "https://my-frontend.com",
-    "https://another-site.com",
-    "http://localhost:5173",
-    "http://192.168.174.1:8080",
-    "http://localhost:8080",
-  ],
+  origin: ["http://localhost:5173", "http://localhost:5174"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,

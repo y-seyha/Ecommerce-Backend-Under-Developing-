@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { Logger } from "utils/logger.js";
-import { PaymentRepository } from "repository/payment.repository.js";
-import { OrderRepository } from "repository/orders.repository.js";
+import { Logger } from "../utils/logger.js";
+import { PaymentRepository } from "../repository/payment.repository.js";
+import { OrderRepository } from "../repository/orders.repository.js";
+import { IUser } from "../model/user.model.js";
 
 const logger = Logger.getInstance();
 const paymentRepo = new PaymentRepository();
@@ -14,8 +15,11 @@ export const authorizePaymentOwnerOrAdmin = () => {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
+      // Type assertion
+      const user = req.user as IUser;
+
       // Admin bypass
-      if (req.user.role === "admin") {
+      if (user.role === "admin") {
         return next();
       }
 
@@ -28,17 +32,18 @@ export const authorizePaymentOwnerOrAdmin = () => {
 
       const order = await orderRepo.findById(payment.order_id);
 
-      if (!order || order.user_id !== req.user.id) {
+      if (!order || order.user_id.toString() !== user.id) {
         logger.warn(
-          `Forbidden: user ${req.user.id} tried to access payment ${paymentId}`,
+          `Forbidden: user ${user.id} tried to access payment ${paymentId}`,
         );
         return res.status(403).json({
           message: "Forbidden: Not your payment",
         });
       }
+
       next();
     } catch (err) {
-      logger.error("Payment ownership check failed");
+      logger.error("Payment ownership check failed", err);
       res.status(500).json({ message: "Server error" });
     }
   };

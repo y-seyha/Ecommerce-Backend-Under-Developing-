@@ -1,10 +1,10 @@
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "Configuration/cloudinary.js";
+import cloudinary from "../Configuration/cloudinary.js";
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: async (req, file) => {
+  params: async (_req, file) => {
     return {
       folder: "ecommerce-products",
       allowed_formats: ["jpg", "png", "jpeg"],

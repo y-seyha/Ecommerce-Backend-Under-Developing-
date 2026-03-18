@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { UserRole } from "model/user.model.js";
-import { Logger } from "utils/logger.js";
+import { UserRole, IUser } from "../model/user.model.js";
+import { Logger } from "../utils/logger.js";
 
 const logger = Logger.getInstance();
 
-//allowedRoles allow to passed roles
+// allowedRoles allow passing roles
 export const authorizeRoleOrSelf = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -13,17 +13,20 @@ export const authorizeRoleOrSelf = (...allowedRoles: UserRole[]) => {
         return res.status(401).json({ message: "Unauthorized: No user info" });
       }
 
-      // the user being updated // + is unary plus === convert string to number
+      // Type assertion: tell TypeScript that req.user is IUser
+      const user = req.user as IUser;
+
+      // the user being updated
       const targetUserId = +req.params.id;
 
       // Admin can update anyone
-      if (req.user.role === "admin") return next();
+      if (user.role === "admin") return next();
 
       // Otherwise, user can update only themselves
-      if (req.user.id === targetUserId) return next();
+      if (user.id === targetUserId.toString()) return next();
 
       logger.warn(
-        `Forbidden: userId=${req.user.id} cannot modify userId=${targetUserId}`,
+        `Forbidden: userId=${user.id} cannot modify userId=${targetUserId}`,
       );
       return res.status(403).json({
         message: "Forbidden: You can only update your own profile",

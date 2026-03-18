@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodObject, ZodRawShape, ZodError, ZodIssue } from "zod";
-import { Logger } from "utils/logger.js";
+import { Logger } from "../utils/logger.js";
 
 const logger = Logger.getInstance();
 

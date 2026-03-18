@@ -1,32 +1,35 @@
 import { Request, Response, NextFunction } from "express";
-import { UserRole } from "model/user.model.js";
-import { Logger } from "utils/logger.js";
+import { UserRole, IUser } from "../model/user.model.js";
+import { Logger } from "../utils/logger.js";
 
 const logger = Logger.getInstance();
 
 export const authorizeRole = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (!req.user) {
+      const user = req.user as IUser | undefined; // <- cast here
+
+      if (!user) {
         logger.warn(`Unauthorized: no user info for ${req.method} ${req.url}`);
         return res.status(401).json({ message: "Unauthorized: No user info" });
       }
 
-      if (!req.user.role) {
-        logger.warn(`Forbidden: missing role for userId=${req.user.id}`);
+      if (!user.role) {
+        logger.warn(`Forbidden: missing role for userId=${user.id}`);
         return res
           .status(403)
           .json({ message: "Forbidden: User role not found" });
       }
 
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!allowedRoles.includes(user.role)) {
         logger.warn(
-          `Forbidden: role '${req.user.role}' not allowed for ${req.user.id}`,
+          `Forbidden: role '${user.role}' not allowed for ${user.id}`,
         );
         return res.status(403).json({
-          message: `Forbidden: Role '${req.user.role}' not allowed to access this resource`,
+          message: `Forbidden: Role '${user.role}' not allowed to access this resource`,
         });
       }
+
       next();
     } catch (err: any) {
       logger.error(
