@@ -34,12 +34,14 @@ app.set("trust proxy", 1);
 
 app.use(globalRateLimiter);
 
+// app.options("*", corsMiddleware);
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 const sessionOptions: SessionOptions = {
-  secret: process.env.SESSION_SECRET!, 
+  secret: process.env.SESSION_SECRET!,
   resave: false,
   saveUninitialized: false,
   cookie: {

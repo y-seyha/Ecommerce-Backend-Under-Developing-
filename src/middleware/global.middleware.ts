@@ -11,6 +11,8 @@ export const corsMiddleware = cors({
     "https://my-frontend.com",
     "https://another-site.com",
     "http://localhost:5173",
+    "http://192.168.174.1:8080",
+    "http://localhost:8080",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

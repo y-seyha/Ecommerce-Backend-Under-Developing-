@@ -2,7 +2,6 @@ import { Router } from "express";
 import { ReviewController } from "../controller/review.controller.js";
 import { authMiddleware } from "middleware/authMiddleware.js";
 import { authorizeRole } from "middleware/roleMiddleware.js";
-import { authorizeReviewOwnerOrAdmin } from "middleware/authorizeReviewOwnerOrAdmin.middleware.js";
 import { validate } from "middleware/validate.middleware.js";
 import { ReviewValidator } from "valildators/review.validar.js";
 

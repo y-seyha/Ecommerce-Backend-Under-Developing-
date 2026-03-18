@@ -1,30 +1,33 @@
 export type UserRole = "customer" | "admin" | "seller";
 
 export interface IUser {
-  id: number | null;
-  first_name: string;
-  last_name: string;
+  id: string; // UUID
   email: string;
-  password?: string;
-  role?: UserRole;
+  first_name?: string;
+  last_name?: string;
+  role: UserRole;
   phone?: string;
-  is_verified?: boolean;
-  created_at?: Date;
-  updated_at?: Date;
+  avatar_url?: string;
+  is_verified: boolean;
+  email_verification_token?: string;
+  email_verification_expires?: Date;
+  password_reset_token?: string;
+  password_reset_expires?: Date;
+  created_at: Date;
+  updated_at: Date;
 }
+
+export type AuthProvider = "credentials" | "google" | "github" | "facebook";
 
 export interface IAccount {
-  id?: number;
-  userId: number;
-  provider: "google" | "facebook" | "github";
+  id: string; 
+  user_id: string;
+  provider: AuthProvider;
   provider_account_id: string;
-  access_token?: string | null;
-  refresh_token?: string | null;
-  expires_at?: Date | null;
-  created_at?: Date;
-}
+  password_hash?: string;
+  access_token?: string;
+  refresh_token?: string;
+  token_expires_at?: Date;
 
-export interface IOAuthUserResponse {
-  user: IUser;
-  account: IAccount;
+  created_at: Date;
 }

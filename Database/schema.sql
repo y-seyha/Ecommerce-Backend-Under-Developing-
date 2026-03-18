@@ -1,29 +1,38 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "citext";
+
 -- Users Table
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255), -- allow null for OAuth users
+   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    email CITEXT UNIQUE NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    role VARCHAR(20) NOT NULL DEFAULT 'customer'
+        CHECK (role IN ('customer', 'admin', 'seller')),
     phone VARCHAR(50),
-    role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('customer', 'admin', 'seller')),
-    is_verified BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    avatar_url TEXT,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    email_verification_token TEXT,
+    email_verification_expires TIMESTAMPTZ,
+    password_reset_token TEXT,
+    password_reset_expires TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Accounts Table (OAuth)
 CREATE TABLE accounts (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    provider VARCHAR(50) NOT NULL, -- 'google', 'github', 'facebook'
-    provider_account_id VARCHAR(100) NOT NULL,
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL,  -- 'credentials', 'google', 'github', 'facebook'
+    provider_account_id TEXT NOT NULL,
+    password_hash TEXT, -- only for credentials login
     access_token TEXT,
     refresh_token TEXT,
-    expires_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(provider, provider_account_id),
-    UNIQUE(user_id, provider)
+    token_expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(provider, provider_account_id)
 );
 
 -- Categories Table

@@ -1,25 +1,77 @@
-import { Request, Router, Response } from "express";
-import { AuthController } from "controller/auth.controller.js";
+import { Router } from "express";
+import {
+  register,
+  login,
+  verifyEmailHandler,
+  googleLoginHandler,
+  googleCallbackHandler,
+  facebookLoginHandler,
+  facebookCallbackHandler,
+  githubLoginHandler,
+  githubCallbackHandler,
+  forgotPasswordHandler,
+  resetPasswordHandler,
+  logoutHandler,
+  refreshTokenHandler,
+  meHandler,
+} from "../controller/auth.controller.js";
+
+import { validate } from "middleware/validate.middleware.js";
+import {
+  loginValidator,
+  registerValidator,
+  verifyEmailValidator,
+  forgotPasswordValidator,
+  resetPasswordValidator,
+  googleCallbackValidator,
+  facebookCallbackValidator,
+  githubCallbackValidator,
+} from "../valildators/auth.validation.js";
 
 const router = Router();
-const authController = new AuthController();
 
-// GOOGLE 
-router.get("/google", authController.googleLogin.bind(authController));
-router.get("/google/callback", authController.googleCallback.bind(authController));
+// Auth routes
+router.post("/register", validate(registerValidator), register);
+router.post("/login", validate(loginValidator), login);
+router.get("/verify-email", validate(verifyEmailValidator), verifyEmailHandler);
+router.get("/me", meHandler);
 
-// facebook
-router.get("/facebook", authController.facebookLogin.bind(authController));
-router.get("/facebook/callback", authController.facebookCallback.bind(authController));
+//  Forgot & Reset password
+router.post(
+  "/forgot-password",
+  validate(forgotPasswordValidator),
+  forgotPasswordHandler,
+);
+router.post(
+  "/reset-password",
+  validate(resetPasswordValidator),
+  resetPasswordHandler,
+);
 
-// github  
-router.get("/github", authController.githubLogin.bind(authController));
-router.get("/github/callback", authController.githubCallback.bind(authController));
+// Logout & Refresh token
+router.post("/logout", logoutHandler);
+router.post("/refresh-token", refreshTokenHandler);
 
-//logout
-router.post("/logout", authController.logout.bind(authController));
+//  Social logins
+router.get("/google", googleLoginHandler);
+router.get(
+  "/google/callback",
+  validate(googleCallbackValidator),
+  googleCallbackHandler,
+);
 
-// auth.routes.ts
-router.get("/refresh", authController.refreshToken.bind(authController));
+router.get("/facebook", facebookLoginHandler);
+router.get(
+  "/facebook/callback",
+  validate(facebookCallbackValidator),
+  facebookCallbackHandler,
+);
+
+router.get("/github", githubLoginHandler);
+router.get(
+  "/github/callback",
+  validate(githubCallbackValidator),
+  githubCallbackHandler,
+);
 
 export default router;
