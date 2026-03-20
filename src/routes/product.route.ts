@@ -1,15 +1,21 @@
 import { Router } from "express";
-import { ProductController } from "controller/product.controller.js";
-import { authMiddleware } from "middleware/authMiddleware.js";
-import { authorizeRole } from "middleware/roleMiddleware.js";
-import { ProductValidator } from "valildators/product.validator.js";
-import { validate } from "middleware/validate.middleware.js";
-import { upload } from "middleware/upload.middleware.js";
-import { parseFormData } from "middleware/parseFormData.middleware.js";
-import { authorizeProductOwnerOrAdmin } from "middleware/authorizeProductOwnerOrAdmin .middleware.js";
+import { ProductController } from "../controller/product.controller.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import { authorizeRole } from "../middleware/roleMiddleware.js";
+import { ProductValidator } from "../valildators/product.validator.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { upload } from "../middleware/upload.middleware.js";
+import { parseFormData } from "../middleware/parseFormData.middleware.js";
+import { authorizeProductOwnerOrAdmin } from "../middleware/authorizeProductOwnerOrAdmin .middleware.js";
 
 const router = Router();
 const controller = new ProductController();
+
+router.get(
+  "/paginated",
+  authMiddleware,
+  controller.getPaginated.bind(controller),
+);
 
 //public route
 router.get("/", controller.findAll);

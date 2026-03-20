@@ -6,6 +6,13 @@ import { authorizeRole } from "../middleware/roleMiddleware.js";
 const router = Router();
 const controller = new SellerController();
 
+// Seller orders
+router.get("/orders", authMiddleware, authorizeRole("seller"), controller.getOrders);
+router.patch("/orders/status", authMiddleware, authorizeRole("seller"), controller.updateOrderItemStatus);
+
+// Seller analytics
+router.get("/analytics", authMiddleware, authorizeRole("seller"), controller.getAnalytics);
+
 router.get(
   "/me",
   authMiddleware,
@@ -30,5 +37,8 @@ router.get(
   authorizeRole("seller", "admin", "customer"),
   controller.getProductsBySellerId,
 );
+
+
+
 
 export default router;

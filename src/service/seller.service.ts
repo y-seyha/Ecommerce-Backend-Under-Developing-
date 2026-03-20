@@ -118,4 +118,97 @@ export class SellerService {
 
     return { seller, user };
   }
+
+  async getOrderBySeller(user_id: string) {
+    const query = `
+      SELECT 
+        o.id AS order_id,
+        o.status AS order_status,
+        o.total_price,
+        o.shipping_name,
+        o.shipping_phone,
+        o.shipping_address,
+        o.shipping_city,
+        oi.id AS order_item_id,
+        oi.product_id,
+        p.name AS product_name,
+        oi.quantity,
+        oi.price AS item_price, oi.status AS status,
+        o.created_at
+      FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON oi.product_id = p.id
+      WHERE p.user_id = $1
+      ORDER BY o.created_at DESC
+    `;
+    const { rows } = await this.pool.query(query, [user_id]);
+    return rows;
+  }
+
+  // Update order item status for seller's product(s)
+  async updateOrderItemStatus(
+    order_item_id: number,
+    status: string,
+    user_id: string,
+  ) {
+    // Verify the item belongs to this seller
+    const check = await this.pool.query(
+      `
+      SELECT oi.id
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.id
+      WHERE oi.id = $1 AND p.user_id = $2
+    `,
+      [order_item_id, user_id],
+    );
+
+    if (check.rows.length === 0) throw new Error("Unauthorized");
+
+    // Update status 
+    const update = await this.pool.query(
+      `UPDATE order_items SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [status, order_item_id],
+    );
+
+    return update.rows[0];
+  }
+
+  async getAnalytics(user_id: string) {
+    const revenueQuery = `
+      SELECT 
+        COUNT(DISTINCT o.id) AS total_orders,
+        SUM(oi.price * oi.quantity) AS total_revenue
+      FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON oi.product_id = p.id
+      WHERE p.user_id = $1
+    `;
+    const topProductsQuery = `
+      SELECT p.id, p.name, SUM(oi.quantity) AS total_sold
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.id
+      WHERE p.user_id = $1
+      GROUP BY p.id, p.name
+      ORDER BY total_sold DESC
+      LIMIT 5
+    `;
+    const reviewsQuery = `
+      SELECT p.id, p.name, AVG(r.rating) AS avg_rating, COUNT(r.id) AS total_reviews
+      FROM products p
+      LEFT JOIN reviews r ON p.id = r.product_id
+      WHERE p.user_id = $1
+      GROUP BY p.id, p.name
+      ORDER BY avg_rating DESC
+    `;
+
+    const revenueRes = await this.pool.query(revenueQuery, [user_id]);
+    const topProductsRes = await this.pool.query(topProductsQuery, [user_id]);
+    const reviewsRes = await this.pool.query(reviewsQuery, [user_id]);
+
+    return {
+      revenue: revenueRes.rows[0],
+      topProducts: topProductsRes.rows,
+      reviews: reviewsRes.rows,
+    };
+  }
 }

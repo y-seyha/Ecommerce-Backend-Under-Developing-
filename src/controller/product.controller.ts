@@ -5,6 +5,7 @@ import { Logger } from "utils/logger.js";
 import { paginationSchema } from "valildators/pagination.validator.js";
 import { Database } from "Configuration/database.js";
 import { IUser } from "model/user.model.js";
+import { ProductValidator } from "valildators/product.validator.js";
 
 export class ProductController {
   private service = new ProductService();
@@ -16,7 +17,7 @@ export class ProductController {
       if (!req.file)
         return res.status(400).json({ message: "No file uploaded" });
 
-      const user = req.user as IUser; 
+      const user = req.user as IUser;
 
       const dto: CreateProductDto = {
         name: req.body.name,
@@ -97,31 +98,37 @@ export class ProductController {
 
   getPaginated = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Parse page & pageSize using Zod
-      const { page, pageSize } = paginationSchema.parse({
+      const parsed = ProductValidator.paginationSchema.parse({
         query: req.query,
-      }).query;
+      });
 
-      // Extract optional filtering & sorting parameters from query
-      const { categoryId, minPrice, maxPrice, sortBy, sortOrder } = req.query;
+      const {
+        page,
+        pageSize,
+        categoryId,
+        minPrice,
+        maxPrice,
+        sortBy,
+        sortOrder,
+      } = parsed.query;
 
       const result = await this.service.getProductsPaginated(
-        Number(page),
-        Number(pageSize),
+        page,
+        pageSize,
         {
-          categoryId: categoryId ? Number(categoryId) : undefined,
-          minPrice: minPrice ? Number(minPrice) : undefined,
-          maxPrice: maxPrice ? Number(maxPrice) : undefined,
+          categoryId,
+          minPrice,
+          maxPrice,
         },
         {
-          sortBy: sortBy as string,
-          sortOrder: (sortOrder as "ASC" | "DESC") || "ASC",
+          sortBy,
+          sortOrder: sortOrder || "ASC",
         },
       );
 
       res.json(result);
     } catch (error) {
-      this.logger.error("Product Controller: GetPaginated Failed", error);
+      console.log("❌ Pagination error:", error);
       next(error);
     }
   };

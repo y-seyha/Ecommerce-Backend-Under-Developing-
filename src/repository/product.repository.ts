@@ -70,12 +70,13 @@ export class ProductRepository {
     return rows;
   }
 
-  async findById(id: number): Promise<Product> {
+  async findById(id: number): Promise<Product | null> {
     const { rows } = await this.pool.query(
       `SELECT * FROM products WHERE id=$1`,
       [id],
     );
-    return rows[0];
+
+    return rows[0] || null;
   }
 
   async delete(id: number): Promise<void> {
@@ -143,5 +144,17 @@ export class ProductRepository {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     };
+  }
+
+  async decreaseStock(productId: number, quantity: number) {
+    const { rows } = await this.pool.query(
+      `UPDATE products
+     SET stock = stock - $1
+     WHERE id = $2 AND stock >= $1
+     RETURNING *`,
+      [quantity, productId],
+    );
+
+    return rows[0] || null;
   }
 }

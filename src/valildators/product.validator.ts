@@ -27,6 +27,23 @@ export class ProductValidator {
 
   static getProductByIdSchema: ZodObject<ZodRawShape> = z.object({
     params: z.object({ id: z.coerce.number() }),
+  });
 
+  static paginationSchema = z.object({
+    query: z.object({
+      page: z.coerce.number().min(1),
+      pageSize: z.coerce.number().min(1),
+
+      categoryId: z.coerce.number().optional(),
+      minPrice: z.coerce.number().optional(),
+      maxPrice: z.coerce.number().optional(),
+
+      sortBy: z.string().optional(),
+      sortOrder: z
+        .string()
+        .transform((val) => val.toUpperCase())
+        .pipe(z.enum(["ASC", "DESC"]))
+        .optional(),
+    }),
   });
 }

@@ -5,6 +5,7 @@ import { CreateOrderDTO, UpdateOrderDTO } from "dto/orders.dto.js";
 import { OrderItemRepository } from "repository/orderItem.repository.js";
 import { OrderRepository } from "repository/orders.repository.js";
 import { PaymentRepository } from "repository/payment.repository.js";
+import { ProductRepository } from "repository/product.repository.js";
 import { Logger } from "utils/logger.js";
 
 type OrderInsert = Omit<CreateOrderDTO, "items" | "payment_method">;
@@ -15,18 +16,31 @@ export class OrderService {
   private pool = Database.getInstance();
   private orderItemRepo = new OrderItemRepository();
   private paymentRepo = new PaymentRepository();
+  private productRepo = new ProductRepository();
 
   async createOrder(dto: CreateOrderDTO) {
     if (!dto.items || !dto.items.length)
       throw new Error("Order must include at least one item");
 
-    // Insert order
+    // 1. Insert order first
     const order = await this.repo.insert(dto);
 
-    // Insert order items
+    // 2. Insert order items
     const orderItems = await this.orderItemRepo.insert(order.id, dto.items);
 
-    // Insert payment
+    // 3. SAFE stock deduction
+    for (const item of dto.items) {
+      const updated = await this.productRepo.decreaseStock(
+        item.product_id,
+        item.quantity,
+      );
+
+      if (!updated) {
+        throw new Error(`Not enough stock for product ${item.product_id}`);
+      }
+    }
+
+    // 4. Insert payment
     const payment = await this.paymentRepo.insert({
       order_id: order.id,
       amount: dto.total_price,

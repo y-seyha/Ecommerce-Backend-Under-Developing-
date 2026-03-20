@@ -108,7 +108,8 @@ CREATE TABLE order_items (
     order_id INT REFERENCES orders(id) ON DELETE CASCADE,
     product_id INT REFERENCES products(id) ON DELETE SET NULL,
     quantity INT NOT NULL,
-    price NUMERIC(10,2) NOT NULL,
+    price NUMERIC(10,2) NOT NULL, 
+    status VARCHAR(50) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

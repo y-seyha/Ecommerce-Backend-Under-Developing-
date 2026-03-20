@@ -168,4 +168,48 @@ export class SellerController {
       next(error);
     }
   };
+
+  // get order for seller
+  getOrders = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as IUser;
+      const orders = await this.service.getOrderBySeller(user.id);
+      res.json({ orders });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // Update status of a seller's order item
+  updateOrderItemStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const user = req.user as IUser;
+      const { order_item_id, status } = req.body;
+
+      const updatedItem = await this.service.updateOrderItemStatus(
+        order_item_id,
+        status,
+        user.id,
+      );
+
+      res.json({ message: "Order item updated", item: updatedItem });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  };
+
+  // Seller Analytics
+  getAnalytics = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as IUser;
+      const analytics = await this.service.getAnalytics(user.id);
+      res.json(analytics);
+    } catch (err) {
+      next(err);
+    }
+  };
 }
