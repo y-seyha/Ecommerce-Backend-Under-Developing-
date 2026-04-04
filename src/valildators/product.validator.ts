@@ -24,9 +24,12 @@ export class ProductValidator {
     }),
     query: z.object({}),
   });
-
   static getProductByIdSchema: ZodObject<ZodRawShape> = z.object({
-    params: z.object({ id: z.coerce.number() }),
+    params: z.object({
+      id: z.coerce.number(),
+    }),
+    body: z.object({}).optional(),
+    query: z.object({}).optional(),
   });
 
   static paginationSchema = z.object({

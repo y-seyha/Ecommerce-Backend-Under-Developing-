@@ -23,7 +23,7 @@ router.get("/search", controller.search);
 router.get("/category/:id", controller.getByCategoryId);
 router.get(
   "/:id",
-  validate(ProductValidator.getProductByIdSchema),
+  // validate(ProductValidator.getProductByIdSchema),
   controller.findById,
 );
 
@@ -60,7 +60,7 @@ router.delete(
   authMiddleware,
   authorizeProductOwnerOrAdmin,
   authorizeRole("admin", "seller"),
-  validate(ProductValidator.getProductByIdSchema),
+  // validate(ProductValidator.getProductByIdSchema),
   controller.delete,
 );
 

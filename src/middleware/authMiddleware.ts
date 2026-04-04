@@ -43,7 +43,10 @@ export const authMiddleware = async (
     }
 
     // Attach user to request
-    req.user = user;
+    const role = (user.role as string).toLowerCase() as UserRole;
+    console.log(role, "Role");
+
+    req.user = { ...user, role };
 
     logger.info(`Authenticated user=${user.id}, ${req.method} ${req.url}`);
     next();

@@ -229,7 +229,6 @@ export class SellerController {
         ? req.params.id[0]
         : req.params.id;
 
-     
       const data: Record<string, any> = { ...req.body };
 
       // If you use multer for file uploads, attach logo file path:
@@ -265,6 +264,57 @@ export class SellerController {
       res.json({ message: "Seller deleted successfully" });
     } catch (error) {
       this.logger.error("AdminSellerController: deleteSeller failed", error);
+      next(error);
+    }
+  };
+
+  // Get all orders for the seller's products
+  getOrdersBySellerId = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const user = req.user as IUser;
+      if (!user?.id) return res.status(401).json({ message: "Unauthorized" });
+
+      const orders = await this.service.getOrderBySeller(user.id);
+
+      if (!orders.length)
+        return res
+          .status(404)
+          .json({ message: "No orders found for your store" });
+
+      // Optionally, you can group by order_id if you want full order objects
+      const groupedOrders = orders.reduce((acc: any, item: any) => {
+        const orderId = item.order_id;
+        if (!acc[orderId]) {
+          acc[orderId] = {
+            order_id: orderId,
+            status: item.order_status,
+            total_price: item.total_price,
+            shipping_name: item.shipping_name,
+            shipping_phone: item.shipping_phone,
+            shipping_address: item.shipping_address,
+            shipping_city: item.shipping_city,
+            created_at: item.created_at,
+            items: [],
+          };
+        }
+        acc[orderId].items.push({
+          order_item_id: item.order_item_id,
+          product_id: item.product_id,
+          product_name: item.product_name,
+          quantity: item.quantity,
+          price: item.item_price,
+          status: item.status,
+        });
+        return acc;
+      }, {});
+
+      res.json({ orders: Object.values(groupedOrders) });
+    } catch (error) {
+      this.logger.error("SellerController: getOrdersBySellerId failed", error);
       next(error);
     }
   };
